@@ -1,0 +1,474 @@
+// Copyright (C) 2025 Category Labs, Inc.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#pragma once
+
+#include "opcodes.hpp"
+#include "uint256.hpp"
+#include <category/vm/evm/traits.hpp>
+#include <category/vm/interpreter/call_runtime.hpp>
+#include <category/vm/interpreter/debug.hpp>
+#include <category/vm/interpreter/instructions_fwd.hpp>
+#include <category/vm/interpreter/push.hpp>
+#include <category/vm/interpreter/stack.hpp>
+#include <category/vm/interpreter/types.hpp>
+#include <category/vm/runtime/runtime.hpp>
+#include <category/vm/runtime/types.hpp>
+#include <category/vm/utils/debug.hpp>
+
+#include <evmc/evmc.h>
+
+#include <array>
+#include <cstdint>
+#include <memory>
+
+#if defined(__has_attribute)
+    #if __has_attribute(musttail)
+        #define MONAD_VM_MUST_TAIL __attribute__((musttail))
+    #else
+        #error "No compiler support for __attribute__((musttail))"
+    #endif
+#else
+    #error "No compiler support for __has_attribute"
+#endif
+
+#define MONAD_VM_NEXT(OP)                                                      \
+    do {                                                                       \
+        static constexpr auto delta =                                          \
+            compiler::opcode_table<traits>[(OP)].stack_increase -              \
+            compiler::opcode_table<traits>[(OP)].min_stack;                    \
+                                                                               \
+        ++instr_ptr;                                                           \
+        if constexpr (debug_enabled) {                                         \
+            trace(analysis, gas_remaining, instr_ptr);                         \
+        }                                                                      \
+        MONAD_VM_MUST_TAIL return instruction_table<traits>[*instr_ptr](       \
+            ctx,                                                               \
+            analysis,                                                          \
+            stack_bottom,                                                      \
+            stack_top + delta,                                                 \
+            gas_remaining,                                                     \
+            instr_ptr);                                                        \
+    }                                                                          \
+    while (false);
+
+#define MONAD_VM_NEXT_PUSH(OP)                                                 \
+    do {                                                                       \
+        static constexpr auto delta =                                          \
+            compiler::opcode_table<traits>[(OP)].stack_increase -              \
+            compiler::opcode_table<traits>[(OP)].min_stack;                    \
+                                                                               \
+        instr_ptr += (((OP) - PUSH0) + 1);                                     \
+        if constexpr (debug_enabled) {                                         \
+            trace(analysis, gas_remaining, instr_ptr);                         \
+        }                                                                      \
+        MONAD_VM_MUST_TAIL return instruction_table<traits>[*instr_ptr](       \
+            ctx,                                                               \
+            analysis,                                                          \
+            stack_bottom,                                                      \
+            stack_top + delta,                                                 \
+            gas_remaining,                                                     \
+            instr_ptr);                                                        \
+    }                                                                          \
+    while (false);
+
+namespace monad::vm::interpreter
+{
+    using enum runtime::StatusCode;
+    using enum compiler::EvmOpCode;
+
+    // Forward declarations
+    MONAD_VM_INSTRUCTION_CALL inline void stop(
+        runtime::Context &, Intercode const &, runtime::uint256_t const *,
+        runtime::uint256_t *, std::int64_t, std::uint8_t const *);
+
+    MONAD_VM_INSTRUCTION_CALL inline void invalid(
+        runtime::Context &, Intercode const &, runtime::uint256_t const *,
+        runtime::uint256_t *, std::int64_t, std::uint8_t const *);
+
+    template <Traits traits>
+    consteval InstrTable make_instruction_table()
+    {
+        constexpr auto since = [](evmc_revision first, InstrEval impl) {
+            return (traits::evm_rev() >= first) ? impl : invalid;
+        };
+
+        return {
+            stop, // 0x00
+            add<traits>, // 0x01
+            invalid, // mul<traits>, // 0x02
+            invalid, // sub<traits>, // 0x03
+            invalid, // udiv<traits>, // 0x04,
+            invalid, // sdiv<traits>, // 0x05,
+            invalid, // umod<traits>, // 0x06,
+            invalid, // smod<traits>, // 0x07,
+            invalid, // addmod<traits>, // 0x08,
+            invalid, // mulmod<traits>, // 0x09,
+            invalid, // exp<traits>, // 0x0A,
+            invalid, // signextend<traits>, // 0x0B,
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+
+            invalid, // lt<traits>, // 0x10,
+            invalid, // gt<traits>, // 0x11,
+            invalid, // slt<traits>, // 0x12,
+            invalid, // sgt<traits>, // 0x13,
+            invalid, // eq<traits>, // 0x14,
+            invalid, // iszero<traits>, // 0x15,
+            invalid, // and_<traits>, // 0x16,
+            invalid, // or_<traits>, // 0x17,
+            invalid, // xor_<traits>, // 0x18,
+            invalid, // not_<traits>, // 0x19,
+            invalid, // byte<traits>, // 0x1A,
+            invalid, // since(EVMC_CONSTANTINOPLE, shl<traits>), // 0x1B,
+            invalid, // since(EVMC_CONSTANTINOPLE, shr<traits>), // 0x1C,
+            invalid, // since(EVMC_CONSTANTINOPLE, sar<traits>), // 0x1D,
+            invalid, //
+            invalid, //
+
+            invalid, // sha3<traits>, // 0x20,
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+
+            invalid, // address<traits>, // 0x30,
+            invalid, // balance<traits>, // 0x31,
+            invalid, // origin<traits>, // 0x32,
+            invalid, // caller<traits>, // 0x33,
+            invalid, // callvalue<traits>, // 0x34,
+            invalid, // calldataload<traits>, // 0x35,
+            invalid, // calldatasize<traits>, // 0x36,
+            invalid, // calldatacopy<traits>, // 0x37,
+            invalid, // codesize<traits>, // 0x38,
+            invalid, // codecopy<traits>, // 0x39,
+            invalid, // gasprice<traits>, // 0x3A,
+            invalid, // extcodesize<traits>, // 0x3B,
+            invalid, // extcodecopy<traits>, // 0x3C,
+            invalid, // since(EVMC_BYZANTIUM, returndatasize<traits>), // 0x3D,
+            invalid, // since(EVMC_BYZANTIUM, returndatacopy<traits>), // 0x3E,
+            invalid, // since(EVMC_CONSTANTINOPLE, extcodehash<traits>), // 0x3F,
+
+            invalid, // blockhash<traits>, // 0x40,
+            invalid, // coinbase<traits>, // 0x41,
+            invalid, // timestamp<traits>, // 0x42,
+            invalid, // number<traits>, // 0x43,
+            invalid, // prevrandao<traits>, // 0x44,
+            invalid, // gaslimit<traits>, // 0x45,
+            invalid, // since(EVMC_ISTANBUL, chainid<traits>), // 0x46,
+            invalid, // since(EVMC_ISTANBUL, selfbalance<traits>), // 0x47,
+            invalid, // since(EVMC_LONDON, basefee<traits>), // 0x48,
+            invalid, // since(EVMC_CANCUN, blobhash<traits>), // 0x49,
+            invalid, // since(EVMC_CANCUN, blobbasefee<traits>), // 0x4A,
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+
+            invalid, // pop<traits>, // 0x50,
+            invalid, // mload<traits>, // 0x51,
+            invalid, // mstore<traits>, // 0x52,
+            invalid, // mstore8<traits>, // 0x53,
+            invalid, // sload<traits>, // 0x54,
+            invalid, // sstore<traits>, // 0x55,
+            invalid, // jump<traits>, // 0x56,
+            invalid, // jumpi<traits>, // 0x57,
+            invalid, // pc<traits>, // 0x58,
+            invalid, // msize<traits>, // 0x59,
+            invalid, // gas<traits>, // 0x5A,
+            invalid, // jumpdest<traits>, // 0x5B,
+            invalid, // since(EVMC_CANCUN, tload<traits>), // 0x5C,
+            invalid, // since(EVMC_CANCUN, tstore<traits>), // 0x5D,
+            invalid, // since(EVMC_CANCUN, mcopy<traits>), // 0x5E,
+            invalid, // since(EVMC_SHANGHAI, push<0, traits>), // 0x5F,
+
+            push<1, traits>, // 0x60,
+            push<2, traits>, // 0x61,
+            push<3, traits>, // 0x62,
+            push<4, traits>, // 0x63,
+            push<5, traits>, // 0x64,
+            push<6, traits>, // 0x65,
+            push<7, traits>, // 0x66,
+            push<8, traits>, // 0x67,
+            push<9, traits>, // 0x68,
+            push<10, traits>, // 0x69,
+            push<11, traits>, // 0x6A,
+            push<12, traits>, // 0x6B,
+            push<13, traits>, // 0x6C,
+            push<14, traits>, // 0x6D,
+            push<15, traits>, // 0x6E,
+            push<16, traits>, // 0x6F,
+
+            push<17, traits>, // 0x70,
+            push<18, traits>, // 0x71,
+            push<19, traits>, // 0x72,
+            push<20, traits>, // 0x73,
+            push<21, traits>, // 0x74,
+            push<22, traits>, // 0x75,
+            push<23, traits>, // 0x76,
+            push<24, traits>, // 0x77,
+            push<25, traits>, // 0x78,
+            push<26, traits>, // 0x79,
+            push<27, traits>, // 0x7A,
+            push<28, traits>, // 0x7B,
+            push<29, traits>, // 0x7C,
+            push<30, traits>, // 0x7D,
+            push<31, traits>, // 0x7E,
+            push<32, traits>, // 0x7F,
+
+            invalid, // dup<1, traits>, // 0x80,
+            invalid, // dup<2, traits>, // 0x81,
+            invalid, // dup<3, traits>, // 0x82,
+            invalid, // dup<4, traits>, // 0x83,
+            invalid, // dup<5, traits>, // 0x84,
+            invalid, // dup<6, traits>, // 0x85,
+            invalid, // dup<7, traits>, // 0x86,
+            invalid, // dup<8, traits>, // 0x87,
+            invalid, // dup<9, traits>, // 0x88,
+            invalid, // dup<10, traits>, // 0x89,
+            invalid, // dup<11, traits>, // 0x8A,
+            invalid, // dup<12, traits>, // 0x8B,
+            invalid, // dup<13, traits>, // 0x8C,
+            invalid, // dup<14, traits>, // 0x8D,
+            invalid, // dup<15, traits>, // 0x8E,
+            invalid, // dup<16, traits>, // 0x8F,
+
+            invalid, // swap<1, traits>, // 0x90,
+            invalid, // swap<2, traits>, // 0x91,
+            invalid, // swap<3, traits>, // 0x92,
+            invalid, // swap<4, traits>, // 0x93,
+            invalid, // swap<5, traits>, // 0x94,
+            invalid, // swap<6, traits>, // 0x95,
+            invalid, // swap<7, traits>, // 0x96,
+            invalid, // swap<8, traits>, // 0x97,
+            invalid, // swap<9, traits>, // 0x98,
+            invalid, // swap<10, traits>, // 0x99,
+            invalid, // swap<11, traits>, // 0x9A,
+            invalid, // swap<12, traits>, // 0x9B,
+            invalid, // swap<13, traits>, // 0x9C,
+            invalid, // swap<14, traits>, // 0x9D,
+            invalid, // swap<15, traits>, // 0x9E,
+            invalid, // swap<16, traits>, // 0x9F,
+
+            invalid, // log<0, traits>, // 0xA0,
+            invalid, // log<1, traits>, // 0xA1,
+            invalid, // log<2, traits>, // 0xA2,
+            invalid, // log<3, traits>, // 0xA3,
+            invalid, // log<4, traits>, // 0xA4,
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+
+            invalid, // create<traits>, // 0xF0,
+            invalid, // call<traits>, // 0xF1,
+            invalid, // callcode<traits>, // 0xF2,
+            invalid, // return_<traits>, // 0xF3,
+            invalid, // since(EVMC_HOMESTEAD, delegatecall<traits>), // 0xF4,
+            invalid, // since(EVMC_CONSTANTINOPLE, create2<traits>), // 0xF5,
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, // since(EVMC_BYZANTIUM, staticcall<traits>), // 0xFA,
+            invalid, //
+            invalid, //
+            invalid, // since(EVMC_BYZANTIUM, revert<traits>), // 0xFD,
+            invalid, // 0xFE,
+            invalid, // selfdestruct<traits>, // 0xFF,
+        };
+    }
+
+    template <Traits traits>
+    constexpr InstrTable instruction_table = make_instruction_table<traits>();
+
+    // Instruction implementations
+    template <std::uint8_t Opcode, Traits traits, typename... FnArgs>
+    [[gnu::always_inline]] inline void checked_runtime_call(
+        void (*f)(FnArgs...), runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t &gas_remaining, std::uint8_t const *)
+    {
+        check_requirements<Opcode, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        call_runtime(f, ctx, stack_top, gas_remaining);
+    }
+
+#ifdef MONAD_COMPILER_TESTING
+    [[gnu::always_inline]]
+    inline void fuzz_tstore_stack(
+        runtime::Context const &ctx, runtime::uint256_t const *stack_bottom,
+        runtime::uint256_t const *stack_top, std::uint64_t base_offset)
+    {
+        if (!utils::is_fuzzing_monad_vm) {
+            return;
+        }
+        monad::vm::runtime::debug_tstore_stack(
+            &ctx,
+            stack_top + 1,
+            static_cast<uint64_t>(stack_top - stack_bottom),
+            0,
+            base_offset);
+    }
+#else
+    [[gnu::always_inline]] inline void fuzz_tstore_stack(
+        runtime::Context const &, runtime::uint256_t const *,
+        runtime::uint256_t const *, std::uint64_t)
+    {
+        // nop
+    }
+#endif
+
+    // Arithmetic
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    add(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<ADD, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[a, b] = top_two(stack_top);
+        b = a + b;
+
+        MONAD_VM_NEXT(ADD);
+    }
+
+    // Stack
+    template <std::size_t N, Traits traits>
+        requires(N <= 32)
+    MONAD_VM_INSTRUCTION_CALL void push(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        push_impl<N, traits>::push(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining, instr_ptr);
+
+        MONAD_VM_NEXT_PUSH(PUSH0 + N);
+    }
+
+    // VM Control
+    MONAD_VM_INSTRUCTION_CALL inline void stop(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *)
+    {
+        fuzz_tstore_stack(ctx, stack_bottom, stack_top, analysis.size());
+        ctx.gas_remaining = gas_remaining;
+        ctx.exit(Success);
+    }
+
+    MONAD_VM_INSTRUCTION_CALL inline void invalid(
+        runtime::Context &ctx, Intercode const &, runtime::uint256_t const *,
+        runtime::uint256_t *, std::int64_t gas_remaining, std::uint8_t const *)
+    {
+        ctx.gas_remaining = gas_remaining;
+        ctx.exit(Error);
+    }
+}
+
+#undef MONAD_VM_MUST_TAIL
+#undef MONAD_VM_NEXT
+#undef MONAD_VM_NEXT_PUSH
