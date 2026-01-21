@@ -18,11 +18,11 @@
 #include "assert.h"
 #include "allocator.hpp"
 #include "bin.hpp"
-#include "transmute.hpp"
 #include "uint256.hpp"
 
-#include "evmc.hpp"
+#include "evmc/evmc.hpp"
 
+#include <csetjmp>
 #include <cstddef>
 #include <span>
 #include <type_traits>
@@ -31,6 +31,15 @@
 
 namespace monad::vm::runtime
 {
+    template <std::uint64_t N>
+    requires(N < 64)
+    [[gnu::always_inline]]
+    constexpr bool is_bounded_by_bits(uint256_t const &x)
+    {
+        static constexpr std::uint64_t mask = ~((std::uint64_t{1} << N) - 1);
+        return ((x[0] & mask) | x[1] | x[2] | x[3]) == 0;
+    }
+
     enum class StatusCode : uint64_t
     {
         Success = 0,
@@ -191,6 +200,9 @@ namespace monad::vm::runtime
         void *exit_stack_ptr = nullptr;
         bool is_stack_unwinding_active = false;
 
+        // For RISC-V: portable exit mechanism using setjmp/longjmp
+        jmp_buf *exit_jmp_buf = nullptr;
+
         [[gnu::always_inline]]
         constexpr void deduct_gas(std::int64_t const gas) noexcept
         {
@@ -333,16 +345,16 @@ namespace monad::vm::runtime
 
 }
 
-extern "C" void monad_vm_runtime_increase_capacity(
-    monad::vm::runtime::Context *, uint32_t old_size,
-    monad::vm::runtime::Bin<31> new_size);
+// extern "C" void monad_vm_runtime_increase_capacity(
+//     monad::vm::runtime::Context *, uint32_t old_size,
+//     monad::vm::runtime::Bin<31> new_size);
 
-extern "C" void monad_vm_runtime_increase_memory(
-    monad::vm::runtime::Bin<30> min_size, monad::vm::runtime::Context *);
+// extern "C" void monad_vm_runtime_increase_memory(
+//     monad::vm::runtime::Bin<30> min_size, monad::vm::runtime::Context *);
 
-// Note: monad_vm_runtime_increase_memory_raw uses non-standard
-// calling convention. Context is passed in rbx and new min
-// memory size if passed in rdi. See context.S. Use the
-// monad_vm_runtime_increase_memory function for a version
-// using standard calling convention
-extern "C" void monad_vm_runtime_increase_memory_raw();
+// // Note: monad_vm_runtime_increase_memory_raw uses non-standard
+// // calling convention. Context is passed in rbx and new min
+// // memory size if passed in rdi. See context.S. Use the
+// // monad_vm_runtime_increase_memory function for a version
+// // using standard calling convention
+// extern "C" void monad_vm_runtime_increase_memory_raw();

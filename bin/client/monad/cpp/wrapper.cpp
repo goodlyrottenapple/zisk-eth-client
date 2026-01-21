@@ -6,6 +6,20 @@
 #include <span>
 #include "opcodes.hpp"
 #include "intercode.hpp"
+#include "runtime_types.hpp"
+#include "allocator.hpp"
+#include "cached_allocator.hpp"
+#include "dummy_host.hpp"
+#include "execute.hpp"
+
+namespace monad::vm::runtime
+{
+    CachedAllocatorList EvmStackAllocatorMeta::cache_list;
+    CachedAllocatorList EvmMemoryAllocatorMeta::cache_list;
+
+    // Global dummy host instance
+    static DummyHost global_dummy_host;
+}
 
 // C interface for FFI
 extern "C" {
@@ -29,7 +43,6 @@ struct EvmExecutionResult {
 static EvmExecutionResult result_storage;
 static uint8_t output_storage[4096]; // Max output size
 static bool result_in_use = false;
-static monad::vm::interpreter::Intercode* current_intercode = nullptr;
 
 // Execute EVM bytecode
 // Parameters:
@@ -42,6 +55,7 @@ EvmExecutionResult* execute_evm_bytecode(
     uint32_t bytecode_len,
     int64_t gas_limit)
 {
+    using namespace monad::vm::runtime;
     if (result_in_use) {
         return nullptr;
     }
@@ -52,36 +66,76 @@ EvmExecutionResult* execute_evm_bytecode(
 
     result_in_use = true;
 
-    // Clean up any previous Intercode
-    if (current_intercode) {
-        delete current_intercode;
-        current_intercode = nullptr;
-    }
-
     // Create Intercode wrapper for the bytecode
     std::span<const uint8_t> code_span(bytecode, bytecode_len);
-    current_intercode = new monad::vm::interpreter::Intercode(code_span);
+    monad::vm::interpreter::Intercode icode{code_span};
 
-    // Read the first byte of the wrapped program
-    uint8_t first_opcode = current_intercode->code()[0];
+    // Create a minimal evmc_message for Context::from
+    evmc_message msg{};
+    msg.kind = EVMC_CALL;
+    msg.flags = 0;
+    msg.depth = 0;
+    msg.gas = gas_limit;
+    msg.recipient = evmc::address{};
+    msg.sender = evmc::address{};
+    msg.input_data = nullptr;
+    msg.input_size = 0;
+    msg.value = evmc::bytes32{};
+    msg.create2_salt = evmc::bytes32{};
 
-    // Get the opcode info using the opcode table
-    // Using Monad Zero traits for now
+    EvmMemoryAllocator mem_alloc{};
+    auto ctx = Context::from(
+        mem_alloc,
+        &evmc::Host::get_interface(),
+        global_dummy_host.to_context(),
+        &msg,
+        code_span
+    );
+
+    // Allocate stack for execution
+    EvmStackAllocator stack_alloc{};
+    auto stack_ptr = stack_alloc.allocate();
+
+    // Execute the bytecode using Monad Zero traits
     using traits = monad::MonadTraits<MONAD_ZERO>;
-    const auto& opcode_info = monad::vm::compiler::opcode_table<traits>[first_opcode];
+    monad::vm::interpreter::execute<traits>(ctx, icode, stack_ptr.get());
 
-    // Copy the opcode name to output_storage as null-terminated string
-    size_t name_len = opcode_info.name.length();
-    if (name_len > sizeof(output_storage) - 1) {
-        name_len = sizeof(output_storage) - 1;
+    // Extract result status
+    result_storage.status_code = static_cast<int32_t>(ctx.result.status);
+    result_storage.gas_used = gas_limit - ctx.gas_remaining;
+
+    // Extract output data from memory if successful or reverted
+    using enum StatusCode;
+    if (ctx.result.status == Success || ctx.result.status == Revert) {
+        // Convert offset and size from 32-byte arrays to uint256_t
+        uint256_t offset_val;
+        uint256_t size_val;
+        std::memcpy(&offset_val, ctx.result.offset, 32);
+        std::memcpy(&size_val, ctx.result.size, 32);
+
+        // Get the actual numeric values (assuming they fit in size_t)
+        // For EVM, we need to check if the values are within reasonable bounds
+        if (offset_val <= SIZE_MAX && size_val <= 4096) {
+            size_t offset = static_cast<size_t>(offset_val);
+            size_t size = static_cast<size_t>(size_val);
+
+            // Copy data from memory to output storage
+            if (size > 0 && offset + size <= ctx.memory.size) {
+                std::memcpy(output_storage, ctx.memory.data + offset, size);
+                result_storage.output_len = static_cast<uint32_t>(size);
+                result_storage.output_data = output_storage;
+            } else {
+                result_storage.output_len = 0;
+                result_storage.output_data = nullptr;
+            }
+        } else {
+            result_storage.output_len = 0;
+            result_storage.output_data = nullptr;
+        }
+    } else {
+        result_storage.output_len = 0;
+        result_storage.output_data = nullptr;
     }
-    memcpy(output_storage, opcode_info.name.data(), name_len);
-    output_storage[name_len] = '\0';
-
-    result_storage.status_code = 0; // success
-    result_storage.gas_used = 0;
-    result_storage.output_len = name_len + 1; // include null terminator
-    result_storage.output_data = output_storage;
 
     return &result_storage;
 }
@@ -90,11 +144,6 @@ EvmExecutionResult* execute_evm_bytecode(
 void free_result(EvmExecutionResult* result) {
     if (result == &result_storage) {
         result_in_use = false;
-        // Clean up Intercode when result is freed
-        if (current_intercode) {
-            delete current_intercode;
-            current_intercode = nullptr;
-        }
     }
 }
 

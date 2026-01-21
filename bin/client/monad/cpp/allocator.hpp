@@ -24,7 +24,7 @@ namespace monad::vm::runtime
         using base_type = uint256_t;
         static constexpr size_t size = 1024;
         static constexpr size_t alignment = 32;
-        static thread_local CachedAllocatorList cache_list;
+        static CachedAllocatorList cache_list;
     };
 
     struct EvmMemoryAllocatorMeta
@@ -32,7 +32,7 @@ namespace monad::vm::runtime
         using base_type = uint8_t;
         static constexpr size_t size = 4096;
         static constexpr size_t alignment = 1;
-        static thread_local CachedAllocatorList cache_list;
+        static CachedAllocatorList cache_list;
     };
 
     using EvmStackAllocator = CachedAllocator<EvmStackAllocatorMeta>;

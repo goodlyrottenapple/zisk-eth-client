@@ -29,12 +29,11 @@ fn main() {
     println!("cargo:rustc-link-search=native={}", lib_path.display());
     println!("cargo:rustc-link-lib=static=monad_wrapper");
 
-    // For RISC-V, link only libstdc++ and libgcc
-    // We provide our own malloc/syscalls in syscalls.cpp to avoid newlib
+    // For RISC-V, link only libgcc (no libstdc++ or libc to avoid relocation issues)
+    // We provide our own malloc/syscalls and use newlib sources from cpp/libc_riscv/
     if make_target == "riscv" {
         println!("cargo:rustc-link-search=native=/home/sam/.zisk/riscv/riscv64-unknown-elf/lib");
         println!("cargo:rustc-link-search=native=/home/sam/.zisk/riscv/lib/gcc/riscv64-unknown-elf/15.2.0");
-        println!("cargo:rustc-link-lib=static=stdc++");
         println!("cargo:rustc-link-lib=gcc");
     } else {
         // For x86, link C++ standard library

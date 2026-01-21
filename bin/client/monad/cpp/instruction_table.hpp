@@ -17,18 +17,18 @@
 
 #include "opcodes.hpp"
 #include "uint256.hpp"
-#include <category/vm/evm/traits.hpp>
-#include <category/vm/interpreter/call_runtime.hpp>
-#include <category/vm/interpreter/debug.hpp>
-#include <category/vm/interpreter/instructions_fwd.hpp>
-#include <category/vm/interpreter/push.hpp>
-#include <category/vm/interpreter/stack.hpp>
-#include <category/vm/interpreter/types.hpp>
-#include <category/vm/runtime/runtime.hpp>
-#include <category/vm/runtime/types.hpp>
-#include <category/vm/utils/debug.hpp>
+#include "traits.hpp"
+#include "runtime_types.hpp"
+#include "interpreter_types.hpp"
+#include "stack.hpp"
+#include "intercode.hpp"
+#include "call_runtime.hpp"
+#include "push.hpp"
+#include "debug.hpp"
+#include "instructions_fwd.hpp"
+#include "memory.hpp"
 
-#include <evmc/evmc.h>
+#include "evmc/evmc.h"
 
 #include <array>
 #include <cstdint>
@@ -86,17 +86,9 @@
 
 namespace monad::vm::interpreter
 {
+    using ::monad::Traits;
     using enum runtime::StatusCode;
     using enum compiler::EvmOpCode;
-
-    // Forward declarations
-    MONAD_VM_INSTRUCTION_CALL inline void stop(
-        runtime::Context &, Intercode const &, runtime::uint256_t const *,
-        runtime::uint256_t *, std::int64_t, std::uint8_t const *);
-
-    MONAD_VM_INSTRUCTION_CALL inline void invalid(
-        runtime::Context &, Intercode const &, runtime::uint256_t const *,
-        runtime::uint256_t *, std::int64_t, std::uint8_t const *);
 
     template <Traits traits>
     consteval InstrTable make_instruction_table()
@@ -193,7 +185,7 @@ namespace monad::vm::interpreter
 
             invalid, // pop<traits>, // 0x50,
             invalid, // mload<traits>, // 0x51,
-            invalid, // mstore<traits>, // 0x52,
+            mstore<traits>, // 0x52,
             invalid, // mstore8<traits>, // 0x53,
             invalid, // sload<traits>, // 0x54,
             invalid, // sstore<traits>, // 0x55,
@@ -364,7 +356,7 @@ namespace monad::vm::interpreter
             invalid, // create<traits>, // 0xF0,
             invalid, // call<traits>, // 0xF1,
             invalid, // callcode<traits>, // 0xF2,
-            invalid, // return_<traits>, // 0xF3,
+            return_<traits>, // 0xF3,
             invalid, // since(EVMC_HOMESTEAD, delegatecall<traits>), // 0xF4,
             invalid, // since(EVMC_CONSTANTINOPLE, create2<traits>), // 0xF5,
             invalid, //
@@ -449,7 +441,55 @@ namespace monad::vm::interpreter
         MONAD_VM_NEXT_PUSH(PUSH0 + N);
     }
 
+    // Memory operations
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void mstore(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<MSTORE, traits>(
+            runtime::mstore,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(MSTORE);
+    }
+
     // VM Control
+    inline void return_impl [[noreturn]] (
+        runtime::StatusCode const code, runtime::Context &ctx,
+        runtime::uint256_t *stack_top, std::int64_t gas_remaining)
+    {
+        for (auto *result_loc : {&ctx.result.offset, &ctx.result.size}) {
+            std::copy_n(
+                runtime::as_bytes(*stack_top),
+                32,
+                reinterpret_cast<std::uint8_t *>(result_loc));
+
+            --stack_top;
+        }
+
+        ctx.gas_remaining = gas_remaining;
+        ctx.exit(code);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void return_(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *)
+    {
+        fuzz_tstore_stack(ctx, stack_bottom, stack_top, analysis.size());
+        check_requirements<RETURN, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        return_impl(Success, ctx, stack_top, gas_remaining);
+    }
+
     MONAD_VM_INSTRUCTION_CALL inline void stop(
         runtime::Context &ctx, Intercode const &analysis,
         runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,

@@ -40,6 +40,11 @@ void _exit(int status) {
     __builtin_unreachable();
 }
 
+[[noreturn]] void abort() {
+    _exit(1);
+    __builtin_unreachable();
+}
+
 // Stub implementations for other syscalls that might be referenced
 int _close(int file) {
     return -1;
@@ -114,30 +119,5 @@ void* realloc(void* ptr, size_t new_size) {
 }
 
 } // extern "C"
-
-// C++ new/delete operators
-void* operator new(size_t size) {
-    return malloc(size);
-}
-
-void* operator new[](size_t size) {
-    return malloc(size);
-}
-
-void operator delete(void* ptr) noexcept {
-    free(ptr);
-}
-
-void operator delete[](void* ptr) noexcept {
-    free(ptr);
-}
-
-void operator delete(void* ptr, size_t) noexcept {
-    free(ptr);
-}
-
-void operator delete[](void* ptr, size_t) noexcept {
-    free(ptr);
-}
 
 #endif // __riscv

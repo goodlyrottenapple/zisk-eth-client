@@ -68,6 +68,10 @@ namespace monad::vm::runtime
             return ptr;
         }
 
+        // Destructor disabled for RISC-V to avoid __cxa_atexit dependency
+#ifdef __riscv
+        ~CachedAllocatorList() = default;
+#else
         ~CachedAllocatorList()
         {
             auto *e = elements;
@@ -77,6 +81,7 @@ namespace monad::vm::runtime
                 e = next;
             }
         }
+#endif
     };
 
     template <typename T>
@@ -111,7 +116,7 @@ namespace monad::vm::runtime
         {
             if (T::cache_list.empty()) {
                 return reinterpret_cast<uint8_t *>(
-                    std::aligned_alloc(T::alignment, alloc_size));
+                    malloc(alloc_size));
             }
             else {
                 return reinterpret_cast<uint8_t *>(T::cache_list.pop());

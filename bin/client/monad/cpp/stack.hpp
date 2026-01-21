@@ -20,7 +20,7 @@
 #include "interpreter_types.hpp"
 #include "uint256.hpp"
 
-#include "evmc.h"
+#include "evmc/evmc.h"
 
 #include <cstdint>
 

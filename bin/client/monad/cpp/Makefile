@@ -1,17 +1,24 @@
 # Compilers
-CXX_X86 = g++
+CXX_X86 = g++-15
 CXX_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-g++
 AR_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-ar
 
 # Compiler flags
 CXXFLAGS_COMMON = -std=c++23 -O3
 CXXFLAGS_X86 = $(CXXFLAGS_COMMON) -fPIC
-CXXFLAGS_RISCV = $(CXXFLAGS_COMMON) -march=rv64ima -mabi=lp64 -nostartfiles -mcmodel=medany -fno-exceptions -fno-rtti
+CXXFLAGS_RISCV = $(CXXFLAGS_COMMON) -Ilibc_riscv -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections
+
+# Assembly flags (for .S files in RISC-V build)
+ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
 
 # Source files - automatically find all .cpp files in current directory
 SOURCES = $(wildcard *.cpp)
 OBJECTS_X86 = $(patsubst %.cpp,build/x86/%.o,$(SOURCES))
-OBJECTS_RISCV = $(patsubst %.cpp,build/riscv/%.o,$(SOURCES))
+
+# For RISC-V: cpp files + newlib C library sources
+LIBC_ASM_SOURCES = $(wildcard libc_riscv/*.S)
+LIBC_OBJECTS_RISCV = $(patsubst libc_riscv/%.S,build/riscv/libc_riscv_%.o,$(LIBC_ASM_SOURCES))
+OBJECTS_RISCV = $(patsubst %.cpp,build/riscv/%.o,$(SOURCES)) $(LIBC_OBJECTS_RISCV)
 
 # Library outputs
 LIB_X86 = build/x86/libmonad_wrapper.a
@@ -41,6 +48,10 @@ $(LIB_RISCV): $(OBJECTS_RISCV)
 build/riscv/%.o: %.cpp
 	@mkdir -p build/riscv
 	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
+
+build/riscv/libc_riscv_%.o: libc_riscv/%.S
+	@mkdir -p build/riscv
+	$(CXX_RISCV) $(ASFLAGS_RISCV) -c $< -o $@
 
 # Clean build artifacts
 clean:
