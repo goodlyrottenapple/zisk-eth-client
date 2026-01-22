@@ -6,40 +6,10 @@ This directory contains source files from the newlib C library implementation fo
 
 These files were retrieved from the official riscv-newlib repository:
 
-**Repository:** https://github.com/riscvarchive/riscv-newlib
-**Commit:** `f289cef6be67da67b2d97a47d6576fa7e6b4c858`
+**Repository:** https://sourceware.org/git/newlib-cygwin.git
+**Commit:** `4b940bb87e2e7aa524cbc73514bc19474650342e`
 **Source Path:** `newlib/libc/machine/riscv/`
-**Direct Link:** https://github.com/riscvarchive/riscv-newlib/tree/f289cef6be67da67b2d97a47d6576fa7e6b4c858/newlib/libc/machine/riscv
-
-## License
-
-Copyright (c) 2017 SiFive Inc. All rights reserved.
-
-This copyrighted material is made available to anyone wishing to use, modify, copy, or redistribute it subject to the terms and conditions of the FreeBSD License. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-A copy of this license is available at http://www.opensource.org/licenses.
-
-## Files Included
-
-### Assembly Files (.S)
-- `setjmp.S` - setjmp/longjmp implementation for non-local control flow
-- `memcpy-asm.S` - Optimized memory copy
-- `memmove.S` - Optimized memory move with overlap handling
-- `memset.S` - Optimized memory initialization
-- `strcmp.S` - Optimized string comparison
-
-### C Files (.c)
-- `ffs.c` - Find first set bit operation
-- `ieeefp.c` - IEEE floating-point handling
-- `memcpy.c` - Memory copy wrapper
-- `memmove-stub.c` - Memory move stub
-- `strcpy.c` - String copy
-- `strlen.c` - String length
-
-### Header Files (sys/)
-- `sys/asm.h` - Assembly macros for 32/64-bit compatibility
-- `sys/fenv.h` - Floating-point environment
-- `sys/string.h` - String operation declarations
+**Direct Link:** https://www.sourceware.org/git/?p=newlib-cygwin.git;a=tree;f=newlib/libc/machine/riscv;h=230fd864dd6fae42245c087e577d2dbc95102ccd;hb=4b940bb87e2e7aa524cbc73514bc19474650342e
 
 ## Why These Sources?
 

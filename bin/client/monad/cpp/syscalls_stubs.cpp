@@ -9,7 +9,8 @@
 extern "C" {
 
 // Simple heap implementation using a statically allocated buffer
-static constexpr size_t HEAP_SIZE = 32 * 1024 * 1024;  // 32 MB heap
+// Reduced from 32MB to 16MB to fit within Zisk ROM limits
+static constexpr size_t HEAP_SIZE = 16 * 1024 * 1024;  // 16 MB heap
 static uint8_t heap_buffer[HEAP_SIZE] __attribute__((aligned(16)));
 static uint8_t* heap_ptr = heap_buffer;
 static uint8_t* heap_end = heap_buffer + HEAP_SIZE;

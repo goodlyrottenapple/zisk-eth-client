@@ -24,47 +24,21 @@ namespace monad::vm::runtime
 // C interface for FFI
 extern "C" {
 
-// Result structure that can be passed across FFI boundary
-struct EvmExecutionResult {
-    // Status code: 0 = success, 1 = revert, 2 = failure
-    int32_t status_code;
-
-    // Gas used
-    int64_t gas_used;
-
-    // Output data length
-    uint32_t output_len;
-
-    // Output data (caller must free with free_output)
-    uint8_t* output_data;
-};
-
 // Simple memory pool for result allocation (avoids new/delete)
-static EvmExecutionResult result_storage;
-static uint8_t output_storage[4096]; // Max output size
-static bool result_in_use = false;
+static evmc_result result_storage;
 
 // Execute EVM bytecode
 // Parameters:
 //   bytecode: The EVM bytecode to execute
 //   bytecode_len: Length of bytecode
 //   gas_limit: Gas limit for execution
-// Returns: EvmExecutionResult (caller must call free_result when done)
-EvmExecutionResult* execute_evm_bytecode(
+// Returns: evmc_result (caller must call free_result when done)
+evmc_result* execute_evm_bytecode(
     const uint8_t* bytecode,
     uint32_t bytecode_len,
     int64_t gas_limit)
 {
     using namespace monad::vm::runtime;
-    if (result_in_use) {
-        return nullptr;
-    }
-
-    if (bytecode_len == 0) {
-        return nullptr;
-    }
-
-    result_in_use = true;
 
     // Create Intercode wrapper for the bytecode
     std::span<const uint8_t> code_span(bytecode, bytecode_len);
@@ -100,50 +74,20 @@ EvmExecutionResult* execute_evm_bytecode(
     using traits = monad::MonadTraits<MONAD_ZERO>;
     monad::vm::interpreter::execute<traits>(ctx, icode, stack_ptr.get());
 
-    // Extract result status
-    result_storage.status_code = static_cast<int32_t>(ctx.result.status);
-    result_storage.gas_used = gas_limit - ctx.gas_remaining;
+    // Use the context's copy_to_evmc_result method to get the result
+    evmc::Result evmc_res = ctx.copy_to_evmc_result();
 
-    // Extract output data from memory if successful or reverted
-    using enum StatusCode;
-    if (ctx.result.status == Success || ctx.result.status == Revert) {
-        // Convert offset and size from 32-byte arrays to uint256_t
-        uint256_t offset_val;
-        uint256_t size_val;
-        std::memcpy(&offset_val, ctx.result.offset, 32);
-        std::memcpy(&size_val, ctx.result.size, 32);
-
-        // Get the actual numeric values (assuming they fit in size_t)
-        // For EVM, we need to check if the values are within reasonable bounds
-        if (offset_val <= SIZE_MAX && size_val <= 4096) {
-            size_t offset = static_cast<size_t>(offset_val);
-            size_t size = static_cast<size_t>(size_val);
-
-            // Copy data from memory to output storage
-            if (size > 0 && offset + size <= ctx.memory.size) {
-                std::memcpy(output_storage, ctx.memory.data + offset, size);
-                result_storage.output_len = static_cast<uint32_t>(size);
-                result_storage.output_data = output_storage;
-            } else {
-                result_storage.output_len = 0;
-                result_storage.output_data = nullptr;
-            }
-        } else {
-            result_storage.output_len = 0;
-            result_storage.output_data = nullptr;
-        }
-    } else {
-        result_storage.output_len = 0;
-        result_storage.output_data = nullptr;
-    }
+    // Copy the result to our static storage and release ownership
+    result_storage = evmc_res.release_raw();
 
     return &result_storage;
 }
 
 // Free the result structure
-void free_result(EvmExecutionResult* result) {
-    if (result == &result_storage) {
-        result_in_use = false;
+void free_result(evmc_result* result) {
+    // Call the release function if present
+    if (result->release) {
+        result->release(result);
     }
 }
 

@@ -33,17 +33,13 @@ fn main() {
         Ok(result) => {
             println!("Execution completed successfully");
             println!("Status: {}", result.status_code);
-            println!("Gas used: {}", result.gas_used);
+            println!("Gas left: {}", result.gas_left);
+            println!("Gas refund: {}", result.gas_refund);
             println!("Output length: {} bytes", result.output.len());
 
             if !result.output.is_empty() {
-                // Try to read as null-terminated string
-                if let Some(null_pos) = result.output.iter().position(|&b| b == 0) {
-                    let opcode_name = String::from_utf8_lossy(&result.output[..null_pos]);
-                    println!("Opcode name: {}", opcode_name);
-                } else {
-                    println!("Output data (hex): {}", hex::encode(&result.output));
-                }
+                // Print output data as hex
+                println!("Output data (hex): {}", hex::encode(&result.output));
 
                 // Write output to ziskos public output
                 // We'll write the output in chunks of 4 bytes as u32 values
