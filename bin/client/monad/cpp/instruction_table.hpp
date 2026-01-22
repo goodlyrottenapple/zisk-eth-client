@@ -19,6 +19,7 @@
 #include "uint256.hpp"
 #include "traits.hpp"
 #include "runtime_types.hpp"
+#include "runtime_math.hpp"
 #include "interpreter_types.hpp"
 #include "stack.hpp"
 #include "intercode.hpp"
@@ -100,15 +101,15 @@ namespace monad::vm::interpreter
         return {
             stop, // 0x00
             add<traits>, // 0x01
-            invalid, // mul<traits>, // 0x02
-            invalid, // sub<traits>, // 0x03
-            invalid, // udiv<traits>, // 0x04,
-            invalid, // sdiv<traits>, // 0x05,
-            invalid, // umod<traits>, // 0x06,
-            invalid, // smod<traits>, // 0x07,
-            invalid, // addmod<traits>, // 0x08,
-            invalid, // mulmod<traits>, // 0x09,
-            invalid, // exp<traits>, // 0x0A,
+            mul<traits>, // 0x02
+            sub<traits>, // 0x03
+            udiv<traits>, // 0x04
+            sdiv<traits>, // 0x05
+            umod<traits>, // 0x06
+            smod<traits>, // 0x07
+            addmod<traits>, // 0x08
+            mulmod<traits>, // 0x09
+            exp<traits>, // 0x0A
             invalid, // signextend<traits>, // 0x0B,
             invalid, //
             invalid, //
@@ -422,9 +423,167 @@ namespace monad::vm::interpreter
         check_requirements<ADD, traits>(
             ctx, analysis, stack_bottom, stack_top, gas_remaining);
         auto &&[a, b] = top_two(stack_top);
-        b = runtime::add(a, b);
+        b = a + b;
 
         MONAD_VM_NEXT(ADD);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    mul(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<MUL, traits>(
+            runtime::mul,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(MUL);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    sub(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<SUB, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[a, b] = top_two(stack_top);
+        b = a - b;
+
+        MONAD_VM_NEXT(SUB);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void udiv(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<DIV, traits>(
+            runtime::udiv,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(DIV);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void sdiv(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<SDIV, traits>(
+            runtime::sdiv,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(SDIV);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void umod(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<MOD, traits>(
+            runtime::umod,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(MOD);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void smod(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<SMOD, traits>(
+            runtime::smod,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(SMOD);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void addmod(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<ADDMOD, traits>(
+            runtime::addmod,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(ADDMOD);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void mulmod(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<MULMOD, traits>(
+            runtime::mulmod,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(MULMOD);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    exp(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<EXP, traits>(
+            runtime::exp<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(EXP);
     }
 
     // Stack

@@ -1,35 +1,17 @@
 // Minimal syscall stubs and allocator for zkVM environment
-// Provides complete memory allocation support without requiring newlib's malloc
+// Uses Zisk's built-in sys_alloc_aligned instead of custom allocator
 
 #ifdef __riscv
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 extern "C" {
 
-// Simple heap implementation using a statically allocated buffer
-// Reduced from 32MB to 16MB to fit within Zisk ROM limits
-static constexpr size_t HEAP_SIZE = 16 * 1024 * 1024;  // 16 MB heap
-static uint8_t heap_buffer[HEAP_SIZE] __attribute__((aligned(16)));
-static uint8_t* heap_ptr = heap_buffer;
-static uint8_t* heap_end = heap_buffer + HEAP_SIZE;
-
-void* _sbrk(intptr_t increment) {
-    uint8_t* prev_heap = heap_ptr;
-
-    // Check for heap overflow
-    if (heap_ptr + increment > heap_end) {
-        return (void*)-1;  // Out of memory
-    }
-
-    if (heap_ptr + increment < heap_buffer) {
-        return (void*)-1;  // Invalid decrement
-    }
-
-    heap_ptr += increment;
-    return prev_heap;
-}
+// Import Zisk's memory allocator from ziskos
+// This is provided by the ziskos entrypoint library
+extern void* sys_alloc_aligned(size_t bytes, size_t align);
 
 void _exit(int status) {
     // In zkVM (RISC-V), we use ecall with syscall number 93 to exit
@@ -79,23 +61,18 @@ int _getpid(void) {
     return 1;
 }
 
-// Provide our own malloc/free implementation to avoid newlib's malloc
+// Provide malloc/free implementation using Zisk's sys_alloc_aligned
 void* malloc(size_t size) {
-    // Align to 16 bytes
-    size = (size + 15) & ~15;
-
-    uint8_t* ptr = heap_ptr;
-    if (ptr + size > heap_end) {
-        return nullptr;  // Out of memory
+    if (size == 0) {
+        return nullptr;
     }
-
-    heap_ptr += size;
-    return ptr;
+    // Use 16-byte alignment for compatibility with intx and general use
+    return sys_alloc_aligned(size, 16);
 }
 
 void free(void* ptr) {
-    // Simple bump allocator - don't actually free memory
-    // This is fine for our use case since Intercode is allocated once
+    // Zisk uses a bump allocator - no actual deallocation
+    // This is fine for our use case since Intercode is allocated once per execution
     (void)ptr;
 }
 
@@ -103,20 +80,33 @@ void* calloc(size_t num, size_t size) {
     size_t total = num * size;
     void* ptr = malloc(total);
     if (ptr) {
-        // Zero the memory
-        for (size_t i = 0; i < total; i++) {
-            ((uint8_t*)ptr)[i] = 0;
-        }
+        // Zero the memory using memset
+        memset(ptr, 0, total);
     }
     return ptr;
 }
 
 void* realloc(void* ptr, size_t new_size) {
-    // Simple implementation: just allocate new block
-    // We don't track sizes, so we can't copy old data
-    // This is sufficient for our use case
+    // Simple implementation: allocate new block
+    // We don't track old sizes in a bump allocator
+    // For our use case (EVM execution), this is sufficient
+    if (new_size == 0) {
+        free(ptr);
+        return nullptr;
+    }
+
+    void* new_ptr = malloc(new_size);
+    // Note: We can't copy old data since we don't know the old size
+    // This is acceptable for our use case
     (void)ptr;
-    return malloc(new_size);
+    return new_ptr;
+}
+
+// Implement _sbrk for compatibility (though malloc doesn't use it)
+void* _sbrk(intptr_t increment) {
+    // Not used when we have malloc implemented via sys_alloc_aligned
+    // Return error to indicate sbrk is not supported
+    return (void*)-1;
 }
 
 } // extern "C"

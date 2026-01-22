@@ -13,7 +13,9 @@ ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
 
 # Source files - automatically find all .cpp files in current directory
 SOURCES = $(wildcard *.cpp)
-OBJECTS_X86 = $(patsubst %.cpp,build/x86/%.o,$(SOURCES))
+ASM_SOURCES_X86 = runtime_math.S
+# For assembly files, use _asm suffix to avoid conflict with .cpp files
+OBJECTS_X86 = $(patsubst %.cpp,build/x86/%.o,$(SOURCES)) $(patsubst %.S,build/x86/%_asm.o,$(ASM_SOURCES_X86))
 
 # For RISC-V: cpp files + newlib C library sources
 LIBC_ASM_SOURCES = $(wildcard libc_riscv/*.S)
@@ -37,6 +39,10 @@ $(LIB_X86): $(OBJECTS_X86)
 build/x86/%.o: %.cpp
 	@mkdir -p build/x86
 	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
+
+build/x86/%_asm.o: %.S
+	@mkdir -p build/x86
+	$(CXX_X86) -c $< -o $@
 
 # RISC-V target using riscv64-unknown-elf-g++
 riscv: $(LIB_RISCV)
