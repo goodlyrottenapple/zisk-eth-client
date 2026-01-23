@@ -20,7 +20,7 @@ ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
 
 # Source files - automatically find all .cpp files in current directory
 SOURCES = $(wildcard *.cpp)
-ASM_SOURCES_X86 = runtime_math.S
+ASM_SOURCES_X86 = runtime_math.S entry.S exit.S
 
 # Ethash library sources
 ETHASH_CPP_SOURCES = ethash/lib/ethash/ethash.cpp

@@ -196,12 +196,13 @@ namespace monad::vm::runtime
         Result result = {};
 
         Memory memory;
-
-        void *exit_stack_ptr = nullptr;
-        bool is_stack_unwinding_active = false;
-
+#if defined(__riscv)
         // For RISC-V: portable exit mechanism using setjmp/longjmp
-        jmp_buf *exit_jmp_buf = nullptr;
+        jmp_buf *exit_stack_ptr = nullptr;
+#else
+        void *exit_stack_ptr = nullptr;
+#endif
+        bool is_stack_unwinding_active = false;
 
         [[gnu::always_inline]]
         constexpr void deduct_gas(std::int64_t const gas) noexcept

@@ -19,43 +19,54 @@
 // Portable exit implementation using setjmp/longjmp for RISC-V
 // Replaces the x86-specific assembly exit mechanism
 
+extern "C" void monad_vm_runtime_exit [[noreturn]] (void *);
+
+extern "C" void monad_vm_runtime_context_error_exit
+    [[noreturn]] (monad::vm::runtime::Context *ctx)
+{
+    ctx->result.status = monad::vm::runtime::StatusCode::OutOfGas;
+#if defined(__riscv)
+        // Use longjmp to return to the execute() function
+        if (ctx->exit_stack_ptr != nullptr) {
+            longjmp(*ctx->exit_stack_ptr, 1);
+        }
+        // Should never reach here
+        __builtin_unreachable();
+#else
+        monad_vm_runtime_exit(ctx->exit_stack_ptr);
+#endif
+}
+
 namespace monad::vm::runtime
 {
     void Context::stack_unwind [[noreturn]] () noexcept
     {
         is_stack_unwinding_active = true;
         result.status = StatusCode::Error;
-
+#if defined(__riscv)
         // Use longjmp to return to the execute() function
-        if (exit_jmp_buf != nullptr) {
-            longjmp(*exit_jmp_buf, 1);
+        if (exit_stack_ptr != nullptr) {
+            longjmp(*exit_stack_ptr, 1);
         }
         // Should never reach here
         __builtin_unreachable();
+#else
+        monad_vm_runtime_exit(exit_stack_ptr);
+#endif
     }
 
     void Context::exit [[noreturn]] (StatusCode code) noexcept
     {
         result.status = code;
-
+#if defined(__riscv)
         // Use longjmp to return to the execute() function
-        if (exit_jmp_buf != nullptr) {
-            longjmp(*exit_jmp_buf, 1);
+        if (exit_stack_ptr != nullptr) {
+            longjmp(*exit_stack_ptr, 1);
         }
         // Should never reach here
         __builtin_unreachable();
+#else
+        monad_vm_runtime_exit(exit_stack_ptr);
+#endif
     }
-}
-
-// C interface for compatibility with existing code
-extern "C" void monad_vm_runtime_context_error_exit
-    [[noreturn]] (monad::vm::runtime::Context *ctx)
-{
-    ctx->result.status = monad::vm::runtime::StatusCode::OutOfGas;
-
-    if (ctx->exit_jmp_buf != nullptr) {
-        longjmp(*ctx->exit_jmp_buf, 1);
-    }
-    // Should never reach here
-    __builtin_unreachable();
 }
