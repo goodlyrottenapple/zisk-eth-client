@@ -1,12 +1,19 @@
 # Compilers
 CXX_X86 = g++-15
+CC_X86 = gcc-15
 CXX_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-g++
+CC_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-gcc
 AR_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-ar
 
 # Compiler flags
-CXXFLAGS_COMMON = -std=c++23 -O3
+CXXFLAGS_COMMON = -std=c++23 -O3 -Iethash/include
 CXXFLAGS_X86 = $(CXXFLAGS_COMMON) -fPIC
 CXXFLAGS_RISCV = $(CXXFLAGS_COMMON) -Ilibc_riscv -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections
+
+# C compiler flags (for .c files)
+CFLAGS_COMMON = -O3 -Iethash/include
+CFLAGS_X86 = $(CFLAGS_COMMON) -fPIC
+CFLAGS_RISCV = $(CFLAGS_COMMON) -Ilibc_riscv -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -ffunction-sections -fdata-sections
 
 # Assembly flags (for .S files in RISC-V build)
 ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
@@ -14,13 +21,26 @@ ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
 # Source files - automatically find all .cpp files in current directory
 SOURCES = $(wildcard *.cpp)
 ASM_SOURCES_X86 = runtime_math.S
+
+# Ethash library sources
+ETHASH_CPP_SOURCES = ethash/lib/ethash/ethash.cpp
+ETHASH_C_SOURCES = ethash/lib/keccak/keccak.c ethash/lib/ethash/primes.c
+
 # For assembly files, use _asm suffix to avoid conflict with .cpp files
-OBJECTS_X86 = $(patsubst %.cpp,build/x86/%.o,$(SOURCES)) $(patsubst %.S,build/x86/%_asm.o,$(ASM_SOURCES_X86))
+ETHASH_OBJECTS_X86 = $(patsubst ethash/lib/%.cpp,build/x86/ethash_%.o,$(ETHASH_CPP_SOURCES)) \
+                     $(patsubst ethash/lib/%.c,build/x86/ethash_%.o,$(ETHASH_C_SOURCES))
+OBJECTS_X86 = $(patsubst %.cpp,build/x86/%.o,$(SOURCES)) \
+              $(patsubst %.S,build/x86/%_asm.o,$(ASM_SOURCES_X86)) \
+              $(ETHASH_OBJECTS_X86)
 
 # For RISC-V: cpp files + newlib C library sources
 LIBC_ASM_SOURCES = $(wildcard libc_riscv/*.S)
 LIBC_OBJECTS_RISCV = $(patsubst libc_riscv/%.S,build/riscv/libc_riscv_%.o,$(LIBC_ASM_SOURCES))
-OBJECTS_RISCV = $(patsubst %.cpp,build/riscv/%.o,$(SOURCES)) $(LIBC_OBJECTS_RISCV)
+ETHASH_OBJECTS_RISCV = $(patsubst ethash/lib/%.cpp,build/riscv/ethash_%.o,$(ETHASH_CPP_SOURCES)) \
+                       $(patsubst ethash/lib/%.c,build/riscv/ethash_%.o,$(ETHASH_C_SOURCES))
+OBJECTS_RISCV = $(patsubst %.cpp,build/riscv/%.o,$(SOURCES)) \
+                $(LIBC_OBJECTS_RISCV) \
+                $(ETHASH_OBJECTS_RISCV)
 
 # Library outputs
 LIB_X86 = build/x86/libmonad_wrapper.a
@@ -44,6 +64,15 @@ build/x86/%_asm.o: %.S
 	@mkdir -p build/x86
 	$(CXX_X86) -c $< -o $@
 
+# Ethash library compilation for x86
+build/x86/ethash_%.o: ethash/lib/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
+
+build/x86/ethash_%.o: ethash/lib/%.c
+	@mkdir -p $(dir $@)
+	$(CC_X86) $(CFLAGS_X86) -c $< -o $@
+
 # RISC-V target using riscv64-unknown-elf-g++
 riscv: $(LIB_RISCV)
 
@@ -58,6 +87,15 @@ build/riscv/%.o: %.cpp
 build/riscv/libc_riscv_%.o: libc_riscv/%.S
 	@mkdir -p build/riscv
 	$(CXX_RISCV) $(ASFLAGS_RISCV) -c $< -o $@
+
+# Ethash library compilation for RISC-V
+build/riscv/ethash_%.o: ethash/lib/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
+
+build/riscv/ethash_%.o: ethash/lib/%.c
+	@mkdir -p $(dir $@)
+	$(CC_RISCV) $(CFLAGS_RISCV) -c $< -o $@
 
 # Clean build artifacts
 clean:

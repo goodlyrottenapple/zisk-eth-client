@@ -1,4 +1,5 @@
 use std::env;
+use std::fs;
 use std::path::Path;
 use std::process::Command;
 
@@ -40,8 +41,29 @@ fn main() {
     }
 
     // Trigger rebuild if source files change
-    println!("cargo:rerun-if-changed=cpp/wrapper.cpp");
     println!("cargo:rerun-if-changed=cpp/Makefile");
+
+    // Track all source files for rebuilds
+    track_source_files(cpp_dir);
+}
+
+fn track_source_files(dir: &Path) {
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+
+            if path.is_dir() {
+                // Recursively track files in subdirectories
+                track_source_files(&path);
+            } else if let Some(ext) = path.extension() {
+                // Track files with relevant extensions
+                let ext_str = ext.to_string_lossy();
+                if ext_str == "h" || ext_str == "hpp" || ext_str == "c" || ext_str == "cpp" || ext_str == "S" {
+                    println!("cargo:rerun-if-changed={}", path.display());
+                }
+            }
+        }
+    }
 }
 
 fn run_make(args: &[&str], dir: &Path) {

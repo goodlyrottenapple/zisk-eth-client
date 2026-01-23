@@ -20,6 +20,7 @@
 #include "traits.hpp"
 #include "runtime_types.hpp"
 #include "runtime_math.hpp"
+#include "runtime_keccak.hpp"
 #include "interpreter_types.hpp"
 #include "stack.hpp"
 #include "intercode.hpp"
@@ -100,40 +101,40 @@ namespace monad::vm::interpreter
 
         return {
             stop, // 0x00
-            add<traits>, // 0x01
-            mul<traits>, // 0x02
-            sub<traits>, // 0x03
-            udiv<traits>, // 0x04
-            sdiv<traits>, // 0x05
-            umod<traits>, // 0x06
-            smod<traits>, // 0x07
-            addmod<traits>, // 0x08
-            mulmod<traits>, // 0x09
-            exp<traits>, // 0x0A
-            invalid, // signextend<traits>, // 0x0B,
+            add<traits>, // 0x01,
+            mul<traits>, // 0x02,
+            sub<traits>, // 0x03,
+            udiv<traits>, // 0x04,
+            sdiv<traits>, // 0x05,
+            umod<traits>, // 0x06,
+            smod<traits>, // 0x07,
+            addmod<traits>, // 0x08,
+            mulmod<traits>, // 0x09,
+            exp<traits>, // 0x0A,
+            signextend<traits>, // 0x0B,
             invalid, //
             invalid, //
             invalid, //
             invalid, //
 
-            invalid, // lt<traits>, // 0x10,
-            invalid, // gt<traits>, // 0x11,
-            invalid, // slt<traits>, // 0x12,
-            invalid, // sgt<traits>, // 0x13,
-            invalid, // eq<traits>, // 0x14,
-            invalid, // iszero<traits>, // 0x15,
-            invalid, // and_<traits>, // 0x16,
-            invalid, // or_<traits>, // 0x17,
-            invalid, // xor_<traits>, // 0x18,
-            invalid, // not_<traits>, // 0x19,
-            invalid, // byte<traits>, // 0x1A,
-            invalid, // since(EVMC_CONSTANTINOPLE, shl<traits>), // 0x1B,
-            invalid, // since(EVMC_CONSTANTINOPLE, shr<traits>), // 0x1C,
-            invalid, // since(EVMC_CONSTANTINOPLE, sar<traits>), // 0x1D,
+            lt<traits>, // 0x10,
+            gt<traits>, // 0x11,
+            slt<traits>, // 0x12,
+            sgt<traits>, // 0x13,
+            eq<traits>, // 0x14,
+            iszero<traits>, // 0x15,
+            and_<traits>, // 0x16,
+            or_<traits>, // 0x17,
+            xor_<traits>, // 0x18,
+            not_<traits>, // 0x19,
+            byte<traits>, // 0x1A,
+            since(EVMC_CONSTANTINOPLE, shl<traits>), // 0x1B,
+            since(EVMC_CONSTANTINOPLE, shr<traits>), // 0x1C,
+            since(EVMC_CONSTANTINOPLE, sar<traits>), // 0x1D,
             invalid, //
             invalid, //
 
-            invalid, // sha3<traits>, // 0x20,
+            sha3<traits>, // 0x20,
             invalid, //
             invalid, //
             invalid, //
@@ -584,6 +585,237 @@ namespace monad::vm::interpreter
             instr_ptr);
 
         MONAD_VM_NEXT(EXP);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void signextend(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<SIGNEXTEND, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[b, x] = top_two(stack_top);
+        x = runtime::signextend(b, x);
+
+        MONAD_VM_NEXT(SIGNEXTEND);
+    }
+
+    // Boolean
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    lt(runtime::Context &ctx, Intercode const &analysis,
+       runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+       std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<LT, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[a, b] = top_two(stack_top);
+        b = a < b;
+
+        MONAD_VM_NEXT(LT);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    gt(runtime::Context &ctx, Intercode const &analysis,
+       runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+       std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<GT, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[a, b] = top_two(stack_top);
+        b = a > b;
+
+        MONAD_VM_NEXT(GT);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    slt(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<SLT, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[a, b] = top_two(stack_top);
+        b = slt(a, b);
+
+        MONAD_VM_NEXT(SLT);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    sgt(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<SGT, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[a, b] = top_two(stack_top);
+        b = slt(b, a); // note swapped arguments
+
+        MONAD_VM_NEXT(SGT);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    eq(runtime::Context &ctx, Intercode const &analysis,
+       runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+       std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<EQ, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[a, b] = top_two(stack_top);
+        b = (a == b);
+
+        MONAD_VM_NEXT(EQ);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void iszero(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<ISZERO, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &a = *stack_top;
+        a = !a;
+
+        MONAD_VM_NEXT(ISZERO);
+    }
+
+    // Bitwise
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void and_(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<AND, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[a, b] = top_two(stack_top);
+        b = a & b;
+
+        MONAD_VM_NEXT(AND);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    or_(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<OR, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[a, b] = top_two(stack_top);
+        b = a | b;
+
+        MONAD_VM_NEXT(OR);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void xor_(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<XOR, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[a, b] = top_two(stack_top);
+        b = a ^ b;
+
+        MONAD_VM_NEXT(XOR);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void not_(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<NOT, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &a = *stack_top;
+        a = ~a;
+
+        MONAD_VM_NEXT(NOT);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void byte(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<BYTE, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[i, x] = top_two(stack_top);
+        x = runtime::byte(i, x);
+
+        MONAD_VM_NEXT(BYTE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    shl(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<SHL, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[shift, value] = top_two(stack_top);
+        value <<= shift;
+
+        MONAD_VM_NEXT(SHL);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    shr(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<SHR, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[shift, value] = top_two(stack_top);
+        value >>= shift;
+
+        MONAD_VM_NEXT(SHR);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    sar(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<SAR, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto &&[shift, value] = top_two(stack_top);
+        value = runtime::sar(shift, value);
+
+        MONAD_VM_NEXT(SAR);
+    }
+
+    // Data
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void sha3(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<SHA3, traits>(
+            runtime::sha3,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(SHA3);
     }
 
     // Stack
