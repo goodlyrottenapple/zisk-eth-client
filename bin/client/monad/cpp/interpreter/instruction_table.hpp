@@ -18,11 +18,16 @@
 #include "../evm/opcodes.hpp"
 #include "../runtime/uint256.hpp"
 #include "../evm/traits.hpp"
+#include "../runtime/call.hpp"
+#include "../runtime/create.hpp"
 #include "../runtime/data.hpp"
 #include "../runtime/environment.hpp"
-#include "../runtime/types.hpp"
-#include "../runtime/math.hpp"
 #include "../runtime/keccak.hpp"
+#include "../runtime/log.hpp"
+#include "../runtime/math.hpp"
+#include "../runtime/selfdestruct.hpp"
+#include "../runtime/storage.hpp"
+#include "../runtime/types.hpp"
 #include "types.hpp"
 #include "stack.hpp"
 #include "intercode.hpp"
@@ -187,22 +192,22 @@ namespace monad::vm::interpreter
             invalid, //
             invalid, //
 
-            invalid, // pop<traits>, // 0x50,
-            invalid, // mload<traits>, // 0x51,
+            pop<traits>, // 0x50,
+            mload<traits>, // 0x51,
             mstore<traits>, // 0x52,
-            invalid, // mstore8<traits>, // 0x53,
-            invalid, // sload<traits>, // 0x54,
-            invalid, // sstore<traits>, // 0x55,
-            invalid, // jump<traits>, // 0x56,
-            invalid, // jumpi<traits>, // 0x57,
-            invalid, // pc<traits>, // 0x58,
-            invalid, // msize<traits>, // 0x59,
-            invalid, // gas<traits>, // 0x5A,
-            invalid, // jumpdest<traits>, // 0x5B,
-            invalid, // since(EVMC_CANCUN, tload<traits>), // 0x5C,
-            invalid, // since(EVMC_CANCUN, tstore<traits>), // 0x5D,
-            invalid, // since(EVMC_CANCUN, mcopy<traits>), // 0x5E,
-            invalid, // since(EVMC_SHANGHAI, push<0, traits>), // 0x5F,
+            mstore8<traits>, // 0x53,
+            sload<traits>, // 0x54,
+            sstore<traits>, // 0x55,
+            jump<traits>, // 0x56,
+            jumpi<traits>, // 0x57,
+            pc<traits>, // 0x58,
+            msize<traits>, // 0x59,
+            gas<traits>, // 0x5A,
+            jumpdest<traits>, // 0x5B,
+            since(EVMC_CANCUN, tload<traits>), // 0x5C,
+            since(EVMC_CANCUN, tstore<traits>), // 0x5D,
+            since(EVMC_CANCUN, mcopy<traits>), // 0x5E,
+            since(EVMC_SHANGHAI, push<0, traits>), // 0x5F,
 
             push<1, traits>, // 0x60,
             push<2, traits>, // 0x61,
@@ -238,62 +243,45 @@ namespace monad::vm::interpreter
             push<31, traits>, // 0x7E,
             push<32, traits>, // 0x7F,
 
-            invalid, // dup<1, traits>, // 0x80,
-            invalid, // dup<2, traits>, // 0x81,
-            invalid, // dup<3, traits>, // 0x82,
-            invalid, // dup<4, traits>, // 0x83,
-            invalid, // dup<5, traits>, // 0x84,
-            invalid, // dup<6, traits>, // 0x85,
-            invalid, // dup<7, traits>, // 0x86,
-            invalid, // dup<8, traits>, // 0x87,
-            invalid, // dup<9, traits>, // 0x88,
-            invalid, // dup<10, traits>, // 0x89,
-            invalid, // dup<11, traits>, // 0x8A,
-            invalid, // dup<12, traits>, // 0x8B,
-            invalid, // dup<13, traits>, // 0x8C,
-            invalid, // dup<14, traits>, // 0x8D,
-            invalid, // dup<15, traits>, // 0x8E,
-            invalid, // dup<16, traits>, // 0x8F,
+            dup<1, traits>, // 0x80,
+            dup<2, traits>, // 0x81,
+            dup<3, traits>, // 0x82,
+            dup<4, traits>, // 0x83,
+            dup<5, traits>, // 0x84,
+            dup<6, traits>, // 0x85,
+            dup<7, traits>, // 0x86,
+            dup<8, traits>, // 0x87,
+            dup<9, traits>, // 0x88,
+            dup<10, traits>, // 0x89,
+            dup<11, traits>, // 0x8A,
+            dup<12, traits>, // 0x8B,
+            dup<13, traits>, // 0x8C,
+            dup<14, traits>, // 0x8D,
+            dup<15, traits>, // 0x8E,
+            dup<16, traits>, // 0x8F,
 
-            invalid, // swap<1, traits>, // 0x90,
-            invalid, // swap<2, traits>, // 0x91,
-            invalid, // swap<3, traits>, // 0x92,
-            invalid, // swap<4, traits>, // 0x93,
-            invalid, // swap<5, traits>, // 0x94,
-            invalid, // swap<6, traits>, // 0x95,
-            invalid, // swap<7, traits>, // 0x96,
-            invalid, // swap<8, traits>, // 0x97,
-            invalid, // swap<9, traits>, // 0x98,
-            invalid, // swap<10, traits>, // 0x99,
-            invalid, // swap<11, traits>, // 0x9A,
-            invalid, // swap<12, traits>, // 0x9B,
-            invalid, // swap<13, traits>, // 0x9C,
-            invalid, // swap<14, traits>, // 0x9D,
-            invalid, // swap<15, traits>, // 0x9E,
-            invalid, // swap<16, traits>, // 0x9F,
+            swap<1, traits>, // 0x90,
+            swap<2, traits>, // 0x91,
+            swap<3, traits>, // 0x92,
+            swap<4, traits>, // 0x93,
+            swap<5, traits>, // 0x94,
+            swap<6, traits>, // 0x95,
+            swap<7, traits>, // 0x96,
+            swap<8, traits>, // 0x97,
+            swap<9, traits>, // 0x98,
+            swap<10, traits>, // 0x99,
+            swap<11, traits>, // 0x9A,
+            swap<12, traits>, // 0x9B,
+            swap<13, traits>, // 0x9C,
+            swap<14, traits>, // 0x9D,
+            swap<15, traits>, // 0x9E,
+            swap<16, traits>, // 0x9F,
 
-            invalid, // log<0, traits>, // 0xA0,
-            invalid, // log<1, traits>, // 0xA1,
-            invalid, // log<2, traits>, // 0xA2,
-            invalid, // log<3, traits>, // 0xA3,
-            invalid, // log<4, traits>, // 0xA4,
-            invalid, //
-            invalid, //
-            invalid, //
-            invalid, //
-            invalid, //
-            invalid, //
-            invalid, //
-            invalid, //
-            invalid, //
-            invalid, //
-            invalid, //
-
-            invalid, //
-            invalid, //
-            invalid, //
-            invalid, //
-            invalid, //
+            log<0, traits>, // 0xA0,
+            log<1, traits>, // 0xA1,
+            log<2, traits>, // 0xA2,
+            log<3, traits>, // 0xA3,
+            log<4, traits>, // 0xA4,
             invalid, //
             invalid, //
             invalid, //
@@ -357,22 +345,39 @@ namespace monad::vm::interpreter
             invalid, //
             invalid, //
 
-            invalid, // create<traits>, // 0xF0,
-            invalid, // call<traits>, // 0xF1,
-            invalid, // callcode<traits>, // 0xF2,
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+            invalid, //
+
+            create<traits>, // 0xF0,
+            call<traits>, // 0xF1,
+            callcode<traits>, // 0xF2,
             return_<traits>, // 0xF3,
-            invalid, // since(EVMC_HOMESTEAD, delegatecall<traits>), // 0xF4,
-            invalid, // since(EVMC_CONSTANTINOPLE, create2<traits>), // 0xF5,
+            since(EVMC_HOMESTEAD, delegatecall<traits>), // 0xF4,
+            since(EVMC_CONSTANTINOPLE, create2<traits>), // 0xF5,
             invalid, //
             invalid, //
             invalid, //
             invalid, //
-            invalid, // since(EVMC_BYZANTIUM, staticcall<traits>), // 0xFA,
+            since(EVMC_BYZANTIUM, staticcall<traits>), // 0xFA,
             invalid, //
             invalid, //
-            invalid, // since(EVMC_BYZANTIUM, revert<traits>), // 0xFD,
+            since(EVMC_BYZANTIUM, revert<traits>), // 0xFD,
             invalid, // 0xFE,
-            invalid, // selfdestruct<traits>, // 0xFF,
+            selfdestruct<traits>, // 0xFF,
         };
     }
 
@@ -1241,21 +1246,25 @@ namespace monad::vm::interpreter
         MONAD_VM_NEXT(BLOBBASEFEE);
     }
 
-    // Stack
-    template <std::size_t N, Traits traits>
-        requires(N <= 32)
-    MONAD_VM_INSTRUCTION_CALL void push(
+    // Memory & Storage
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void mload(
         runtime::Context &ctx, Intercode const &analysis,
         runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
         std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
     {
-        push_impl<N, traits>::push(
-            ctx, analysis, stack_bottom, stack_top, gas_remaining, instr_ptr);
+        checked_runtime_call<MLOAD, traits>(
+            runtime::mload,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
 
-        MONAD_VM_NEXT_PUSH(PUSH0 + N);
+        MONAD_VM_NEXT(MLOAD);
     }
 
-    // Memory operations
     template <Traits traits>
     MONAD_VM_INSTRUCTION_CALL void mstore(
         runtime::Context &ctx, Intercode const &analysis,
@@ -1274,22 +1283,457 @@ namespace monad::vm::interpreter
         MONAD_VM_NEXT(MSTORE);
     }
 
-    // VM Control
-    inline void return_impl [[noreturn]] (
-        runtime::StatusCode const code, runtime::Context &ctx,
-        runtime::uint256_t *stack_top, std::int64_t gas_remaining)
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void mstore8(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
     {
-        for (auto *result_loc : {&ctx.result.offset, &ctx.result.size}) {
-            std::copy_n(
-                runtime::as_bytes(*stack_top),
-                32,
-                reinterpret_cast<std::uint8_t *>(result_loc));
+        checked_runtime_call<MSTORE8, traits>(
+            runtime::mstore8,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
 
-            --stack_top;
+        MONAD_VM_NEXT(MSTORE8);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void mcopy(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<MCOPY, traits>(
+            runtime::mcopy,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(MCOPY);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void sstore(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<SSTORE, traits>(
+            runtime::sstore<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(SSTORE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void sload(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<SLOAD, traits>(
+            runtime::sload<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(SLOAD);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void tstore(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<TSTORE, traits>(
+            runtime::tstore,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(TSTORE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void tload(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<TLOAD, traits>(
+            runtime::tload,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(TLOAD);
+    }
+
+    // Execution Intercode
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    pc(runtime::Context &ctx, Intercode const &analysis,
+       runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+       std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<PC, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, instr_ptr - analysis.code());
+
+        MONAD_VM_NEXT(PC);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void msize(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<MSIZE, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, ctx.memory.size);
+
+        MONAD_VM_NEXT(MSIZE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    gas(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<GAS, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, gas_remaining);
+
+        MONAD_VM_NEXT(GAS);
+    }
+
+    // Stack
+    template <std::size_t N, Traits traits>
+        requires(N <= 32)
+    MONAD_VM_INSTRUCTION_CALL void push(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        push_impl<N, traits>::push(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining, instr_ptr);
+
+        MONAD_VM_NEXT_PUSH(PUSH0 + N);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void
+    pop(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<POP, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        MONAD_VM_NEXT(POP);
+    }
+
+    template <std::size_t N, Traits traits>
+        requires(N >= 1)
+    MONAD_VM_INSTRUCTION_CALL void
+    dup(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<DUP1 + (N - 1), traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+
+        auto *const old_top = stack_top;
+        push(stack_top, *(old_top - (N - 1)));
+
+        MONAD_VM_NEXT(DUP1 + (N - 1));
+    }
+
+    template <std::size_t N, Traits traits>
+        requires(N >= 1)
+    MONAD_VM_INSTRUCTION_CALL void swap(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<SWAP1 + (N - 1), traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+
+        std::swap(*stack_top, *(stack_top - N));
+
+        MONAD_VM_NEXT(SWAP1 + (N - 1));
+    }
+
+    // Control Flow
+    namespace
+    {
+        inline std::uint8_t const *jump_impl(
+            runtime::Context &ctx, Intercode const &analysis,
+            runtime::uint256_t const &target)
+        {
+            if (MONAD_VM_UNLIKELY(
+                    target > std::numeric_limits<std::size_t>::max())) {
+                ctx.exit(Error);
+            }
+
+            auto const jd = static_cast<std::size_t>(target);
+            if (MONAD_VM_UNLIKELY(!analysis.is_jumpdest(jd))) {
+                ctx.exit(Error);
+            }
+
+            return analysis.code() + jd;
         }
+    }
 
-        ctx.gas_remaining = gas_remaining;
-        ctx.exit(code);
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void jump(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *)
+    {
+        check_requirements<JUMP, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto const &target = pop(stack_top);
+        auto const *const new_ip = jump_impl(ctx, analysis, target);
+
+        if constexpr (debug_enabled) {
+            trace(analysis, gas_remaining, new_ip);
+        }
+        MONAD_VM_MUST_TAIL return instruction_table<traits>[*new_ip](
+            ctx, analysis, stack_bottom, stack_top, gas_remaining, new_ip);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void jumpi(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<JUMPI, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        auto const &target = pop(stack_top);
+        auto const &cond = pop(stack_top);
+
+        if (cond) {
+            auto const *const new_ip = jump_impl(ctx, analysis, target);
+            if constexpr (debug_enabled) {
+                trace(analysis, gas_remaining, new_ip);
+            }
+            MONAD_VM_MUST_TAIL return instruction_table<traits>[*new_ip](
+                ctx, analysis, stack_bottom, stack_top, gas_remaining, new_ip);
+        }
+        else {
+            ++instr_ptr;
+            if constexpr (debug_enabled) {
+                trace(analysis, gas_remaining, instr_ptr);
+            }
+            MONAD_VM_MUST_TAIL return instruction_table<traits>[*instr_ptr](
+                ctx,
+                analysis,
+                stack_bottom,
+                stack_top,
+                gas_remaining,
+                instr_ptr);
+        }
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void jumpdest(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        fuzz_tstore_stack(
+            ctx,
+            stack_bottom,
+            stack_top,
+            static_cast<uint64_t>(instr_ptr - analysis.code()));
+        check_requirements<JUMPDEST, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+
+        MONAD_VM_NEXT(JUMPDEST);
+    }
+
+    // Logging
+    template <std::size_t N, Traits traits>
+        requires(N <= 4)
+    MONAD_VM_INSTRUCTION_CALL void
+    log(runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        static constexpr auto impls = std::tuple{
+            &runtime::log0,
+            &runtime::log1,
+            &runtime::log2,
+            &runtime::log3,
+            &runtime::log4,
+        };
+
+        checked_runtime_call<LOG0 + N, traits>(
+            std::get<N>(impls),
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(LOG0 + N);
+    }
+
+    // Call & Create
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void create(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<CREATE, traits>(
+            runtime::create<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(CREATE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void call(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<CALL, traits>(
+            runtime::call<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(CALL);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void callcode(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<CALLCODE, traits>(
+            runtime::callcode<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(CALLCODE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void delegatecall(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<DELEGATECALL, traits>(
+            runtime::delegatecall<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(DELEGATECALL);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void create2(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<CREATE2, traits>(
+            runtime::create2<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(CREATE2);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void staticcall(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<STATICCALL, traits>(
+            runtime::staticcall<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(STATICCALL);
+    }
+
+
+    // VM Control
+    namespace
+    {
+        inline void return_impl [[noreturn]] (
+            runtime::StatusCode const code, runtime::Context &ctx,
+            runtime::uint256_t *stack_top, std::int64_t gas_remaining)
+        {
+            for (auto *result_loc : {&ctx.result.offset, &ctx.result.size}) {
+                std::copy_n(
+                    as_bytes(stack_top),
+                    32,
+                    reinterpret_cast<std::uint8_t *>(result_loc));
+
+                --stack_top;
+            }
+
+            ctx.gas_remaining = gas_remaining;
+            ctx.exit(code);
+        }
     }
 
     template <Traits traits>
@@ -1302,6 +1746,34 @@ namespace monad::vm::interpreter
         check_requirements<RETURN, traits>(
             ctx, analysis, stack_bottom, stack_top, gas_remaining);
         return_impl(Success, ctx, stack_top, gas_remaining);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void revert(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *)
+    {
+        check_requirements<REVERT, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        return_impl(Revert, ctx, stack_top, gas_remaining);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void selfdestruct(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        fuzz_tstore_stack(ctx, stack_bottom, stack_top, analysis.size());
+        checked_runtime_call<SELFDESTRUCT, traits>(
+            runtime::selfdestruct<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
     }
 
     MONAD_VM_INSTRUCTION_CALL inline void stop(
