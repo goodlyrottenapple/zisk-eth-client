@@ -8,7 +8,7 @@ AR_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-ar
 # Compiler flags
 CXXFLAGS_COMMON = -std=c++23 -O3 -Iethash/include
 CXXFLAGS_X86 = $(CXXFLAGS_COMMON) -fPIC
-CXXFLAGS_RISCV = $(CXXFLAGS_COMMON) -Ilibc_riscv -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections
+CXXFLAGS_RISCV = $(CXXFLAGS_COMMON) -Ilibc_riscv -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG
 
 # C compiler flags (for .c files)
 CFLAGS_COMMON = -O3 -Iethash/include
@@ -18,9 +18,9 @@ CFLAGS_RISCV = $(CFLAGS_COMMON) -Ilibc_riscv -march=rv64ima -mabi=lp64 -nostartf
 # Assembly flags (for .S files in RISC-V build)
 ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
 
-# Source files - automatically find all .cpp files in current directory
-SOURCES = $(wildcard *.cpp)
-ASM_SOURCES_X86 = runtime_math.S entry.S exit.S
+# Source files - automatically find all .cpp files in current directory, runtime/, interpreter/, and core/
+SOURCES = $(wildcard *.cpp) $(wildcard runtime/*.cpp) $(wildcard interpreter/*.cpp) $(wildcard core/*.cpp)
+ASM_SOURCES_X86 = runtime/math.S interpreter/entry.S runtime/exit.S
 
 # Ethash library sources
 ETHASH_CPP_SOURCES = ethash/lib/ethash/ethash.cpp
@@ -57,11 +57,31 @@ $(LIB_X86): $(OBJECTS_X86)
 	ar rcs $(LIB_X86) $(OBJECTS_X86)
 
 build/x86/%.o: %.cpp
-	@mkdir -p build/x86
+	@mkdir -p $(dir $@)
+	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
+
+build/x86/runtime/%.o: runtime/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
+
+build/x86/interpreter/%.o: interpreter/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
+
+build/x86/core/%.o: core/%.cpp
+	@mkdir -p $(dir $@)
 	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
 
 build/x86/%_asm.o: %.S
-	@mkdir -p build/x86
+	@mkdir -p $(dir $@)
+	$(CXX_X86) -c $< -o $@
+
+build/x86/runtime/%_asm.o: runtime/%.S
+	@mkdir -p $(dir $@)
+	$(CXX_X86) -c $< -o $@
+
+build/x86/interpreter/%_asm.o: interpreter/%.S
+	@mkdir -p $(dir $@)
 	$(CXX_X86) -c $< -o $@
 
 # Ethash library compilation for x86
@@ -81,7 +101,19 @@ $(LIB_RISCV): $(OBJECTS_RISCV)
 	$(AR_RISCV) rcs $(LIB_RISCV) $(OBJECTS_RISCV)
 
 build/riscv/%.o: %.cpp
-	@mkdir -p build/riscv
+	@mkdir -p $(dir $@)
+	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
+
+build/riscv/runtime/%.o: runtime/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
+
+build/riscv/interpreter/%.o: interpreter/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
+
+build/riscv/core/%.o: core/%.cpp
+	@mkdir -p $(dir $@)
 	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
 
 build/riscv/libc_riscv_%.o: libc_riscv/%.S

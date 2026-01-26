@@ -15,22 +15,24 @@
 
 #pragma once
 
-#include "opcodes.hpp"
-#include "uint256.hpp"
-#include "traits.hpp"
-#include "runtime_types.hpp"
-#include "runtime_math.hpp"
-#include "runtime_keccak.hpp"
-#include "interpreter_types.hpp"
+#include "../evm/opcodes.hpp"
+#include "../runtime/uint256.hpp"
+#include "../evm/traits.hpp"
+#include "../runtime/data.hpp"
+#include "../runtime/environment.hpp"
+#include "../runtime/types.hpp"
+#include "../runtime/math.hpp"
+#include "../runtime/keccak.hpp"
+#include "types.hpp"
 #include "stack.hpp"
 #include "intercode.hpp"
 #include "call_runtime.hpp"
 #include "push.hpp"
 #include "debug.hpp"
 #include "instructions_fwd.hpp"
-#include "memory.hpp"
+#include "../runtime/memory.hpp"
 
-#include "evmc/evmc.h"
+#include "../evmc/evmc.h"
 
 #include <array>
 #include <cstdint>
@@ -151,34 +153,34 @@ namespace monad::vm::interpreter
             invalid, //
             invalid, //
 
-            invalid, // address<traits>, // 0x30,
-            invalid, // balance<traits>, // 0x31,
-            invalid, // origin<traits>, // 0x32,
-            invalid, // caller<traits>, // 0x33,
-            invalid, // callvalue<traits>, // 0x34,
-            invalid, // calldataload<traits>, // 0x35,
-            invalid, // calldatasize<traits>, // 0x36,
-            invalid, // calldatacopy<traits>, // 0x37,
-            invalid, // codesize<traits>, // 0x38,
-            invalid, // codecopy<traits>, // 0x39,
-            invalid, // gasprice<traits>, // 0x3A,
-            invalid, // extcodesize<traits>, // 0x3B,
-            invalid, // extcodecopy<traits>, // 0x3C,
-            invalid, // since(EVMC_BYZANTIUM, returndatasize<traits>), // 0x3D,
-            invalid, // since(EVMC_BYZANTIUM, returndatacopy<traits>), // 0x3E,
-            invalid, // since(EVMC_CONSTANTINOPLE, extcodehash<traits>), // 0x3F,
+            address<traits>, // 0x30,
+            balance<traits>, // 0x31,
+            origin<traits>, // 0x32,
+            caller<traits>, // 0x33,
+            callvalue<traits>, // 0x34,
+            calldataload<traits>, // 0x35,
+            calldatasize<traits>, // 0x36,
+            calldatacopy<traits>, // 0x37,
+            codesize<traits>, // 0x38,
+            codecopy<traits>, // 0x39,
+            gasprice<traits>, // 0x3A,
+            extcodesize<traits>, // 0x3B,
+            extcodecopy<traits>, // 0x3C,
+            since(EVMC_BYZANTIUM, returndatasize<traits>), // 0x3D,
+            since(EVMC_BYZANTIUM, returndatacopy<traits>), // 0x3E,
+            since(EVMC_CONSTANTINOPLE, extcodehash<traits>), // 0x3F,
 
-            invalid, // blockhash<traits>, // 0x40,
-            invalid, // coinbase<traits>, // 0x41,
-            invalid, // timestamp<traits>, // 0x42,
-            invalid, // number<traits>, // 0x43,
-            invalid, // prevrandao<traits>, // 0x44,
-            invalid, // gaslimit<traits>, // 0x45,
-            invalid, // since(EVMC_ISTANBUL, chainid<traits>), // 0x46,
-            invalid, // since(EVMC_ISTANBUL, selfbalance<traits>), // 0x47,
-            invalid, // since(EVMC_LONDON, basefee<traits>), // 0x48,
-            invalid, // since(EVMC_CANCUN, blobhash<traits>), // 0x49,
-            invalid, // since(EVMC_CANCUN, blobbasefee<traits>), // 0x4A,
+            blockhash<traits>, // 0x40,
+            coinbase<traits>, // 0x41,
+            timestamp<traits>, // 0x42,
+            number<traits>, // 0x43,
+            prevrandao<traits>, // 0x44,
+            gaslimit<traits>, // 0x45,
+            since(EVMC_ISTANBUL, chainid<traits>), // 0x46,
+            since(EVMC_ISTANBUL, selfbalance<traits>), // 0x47,
+            since(EVMC_LONDON, basefee<traits>), // 0x48,
+            since(EVMC_CANCUN, blobhash<traits>), // 0x49,
+            since(EVMC_CANCUN, blobbasefee<traits>), // 0x4A,
             invalid, //
             invalid, //
             invalid, //
@@ -816,6 +818,427 @@ namespace monad::vm::interpreter
             instr_ptr);
 
         MONAD_VM_NEXT(SHA3);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void address(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<ADDRESS, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, runtime::uint256_from_address(ctx.env.recipient));
+
+        MONAD_VM_NEXT(ADDRESS);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void balance(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<BALANCE, traits>(
+            runtime::balance<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(BALANCE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void origin(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<ORIGIN, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(
+            stack_top,
+            runtime::uint256_from_address(ctx.env.tx_context.tx_origin));
+
+        MONAD_VM_NEXT(ORIGIN);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void caller(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<CALLER, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, runtime::uint256_from_address(ctx.env.sender));
+
+        MONAD_VM_NEXT(CALLER);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void callvalue(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<CALLVALUE, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, runtime::uint256_from_bytes32(ctx.env.value));
+
+        MONAD_VM_NEXT(CALLVALUE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void calldataload(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<CALLDATALOAD, traits>(
+            runtime::calldataload,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(CALLDATALOAD);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void calldatasize(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<CALLDATASIZE, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, ctx.env.input_data_size);
+
+        MONAD_VM_NEXT(CALLDATASIZE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void calldatacopy(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<CALLDATACOPY, traits>(
+            runtime::calldatacopy,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(CALLDATACOPY);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void codesize(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<CODESIZE, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, ctx.env.code_size);
+
+        MONAD_VM_NEXT(CODESIZE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void codecopy(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<CODECOPY, traits>(
+            runtime::codecopy,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(CODECOPY);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void gasprice(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<GASPRICE, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(
+            stack_top,
+            runtime::uint256_from_bytes32(ctx.env.tx_context.tx_gas_price));
+
+        MONAD_VM_NEXT(GASPRICE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void extcodesize(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<EXTCODESIZE, traits>(
+            runtime::extcodesize<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(EXTCODESIZE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void extcodecopy(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<EXTCODECOPY, traits>(
+            runtime::extcodecopy<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(EXTCODECOPY);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void returndatasize(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<RETURNDATASIZE, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, ctx.env.return_data_size);
+
+        MONAD_VM_NEXT(RETURNDATASIZE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void returndatacopy(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<RETURNDATACOPY, traits>(
+            runtime::returndatacopy,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(RETURNDATACOPY);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void extcodehash(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<EXTCODEHASH, traits>(
+            runtime::extcodehash<traits>,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(EXTCODEHASH);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void blockhash(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<BLOCKHASH, traits>(
+            runtime::blockhash,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(BLOCKHASH);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void coinbase(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<COINBASE, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(
+            stack_top,
+            runtime::uint256_from_address(ctx.env.tx_context.block_coinbase));
+
+        MONAD_VM_NEXT(COINBASE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void timestamp(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<TIMESTAMP, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, ctx.env.tx_context.block_timestamp);
+
+        MONAD_VM_NEXT(TIMESTAMP);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void number(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<NUMBER, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, ctx.env.tx_context.block_number);
+
+        MONAD_VM_NEXT(NUMBER);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void prevrandao(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<DIFFICULTY, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(
+            stack_top,
+            runtime::uint256_from_bytes32(
+                ctx.env.tx_context.block_prev_randao));
+
+        MONAD_VM_NEXT(DIFFICULTY);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void gaslimit(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<GASLIMIT, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(stack_top, ctx.env.tx_context.block_gas_limit);
+
+        MONAD_VM_NEXT(GASLIMIT);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void chainid(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<CHAINID, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(
+            stack_top,
+            runtime::uint256_from_bytes32(ctx.env.tx_context.chain_id));
+
+        MONAD_VM_NEXT(CHAINID);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void selfbalance(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<SELFBALANCE, traits>(
+            runtime::selfbalance,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(SELFBALANCE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void basefee(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<BASEFEE, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(
+            stack_top,
+            runtime::uint256_from_bytes32(ctx.env.tx_context.block_base_fee));
+
+        MONAD_VM_NEXT(BASEFEE);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void blobhash(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        checked_runtime_call<BLOBHASH, traits>(
+            runtime::blobhash,
+            ctx,
+            analysis,
+            stack_bottom,
+            stack_top,
+            gas_remaining,
+            instr_ptr);
+
+        MONAD_VM_NEXT(BLOBHASH);
+    }
+
+    template <Traits traits>
+    MONAD_VM_INSTRUCTION_CALL void blobbasefee(
+        runtime::Context &ctx, Intercode const &analysis,
+        runtime::uint256_t const *stack_bottom, runtime::uint256_t *stack_top,
+        std::int64_t gas_remaining, std::uint8_t const *instr_ptr)
+    {
+        check_requirements<BLOBBASEFEE, traits>(
+            ctx, analysis, stack_bottom, stack_top, gas_remaining);
+        push(
+            stack_top,
+            runtime::uint256_from_bytes32(ctx.env.tx_context.blob_base_fee));
+
+        MONAD_VM_NEXT(BLOBBASEFEE);
     }
 
     // Stack

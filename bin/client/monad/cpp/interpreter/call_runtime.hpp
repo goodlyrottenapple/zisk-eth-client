@@ -15,9 +15,9 @@
 
 #pragma once
 
-#include "interpreter_types.hpp"
-#include "runtime_detail.hpp"
-#include "runtime_types.hpp"
+#include "types.hpp"
+#include "../runtime/detail.hpp"
+#include "../runtime/types.hpp"
 
 namespace monad::vm::interpreter
 {

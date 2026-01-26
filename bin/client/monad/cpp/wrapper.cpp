@@ -4,13 +4,13 @@
 #include <cstdint>
 #include <cstring>
 #include <span>
-#include "opcodes.hpp"
-#include "intercode.hpp"
-#include "runtime_types.hpp"
-#include "allocator.hpp"
-#include "cached_allocator.hpp"
+#include "evm/opcodes.hpp"
+#include "interpreter/intercode.hpp"
+#include "runtime/types.hpp"
+#include "runtime/allocator.hpp"
+#include "runtime/cached_allocator.hpp"
 #include "dummy_host.hpp"
-#include "execute.hpp"
+#include "interpreter/execute.hpp"
 
 namespace monad::vm::runtime
 {

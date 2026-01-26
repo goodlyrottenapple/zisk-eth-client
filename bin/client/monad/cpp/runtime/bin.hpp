@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "assert.h"
+#include "../core/assert.h"
 
 #include <algorithm>
 #include <bit>

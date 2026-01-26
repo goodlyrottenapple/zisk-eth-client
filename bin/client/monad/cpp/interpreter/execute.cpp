@@ -13,12 +13,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "traits.hpp"
+#include "../evm/traits.hpp"
 #include "instruction_table.hpp"
 #include "intercode.hpp"
-#include "runtime_types.hpp"
-#include "uint256.hpp"
-#include "utils_traits.hpp"
+#include "../runtime/types.hpp"
+#include "../runtime/uint256.hpp"
+#include "../utils_traits.hpp"
 
 #include <cstdint>
 #include <csetjmp>

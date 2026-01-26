@@ -15,11 +15,11 @@
 
 #pragma once
 
-#include "traits.hpp"
-#include "runtime_types.hpp"
+#include "../evm/traits.hpp"
+#include "types.hpp"
 #include "uint256.hpp"
 
-#include "evmc/evmc.hpp"
+#include "../evmc/evmc.hpp"
 
 // It is assumed that if the `result` pointer overlaps with `left` and/or
 // `right`, then `result` pointer is equal to `left` and/or `right`.

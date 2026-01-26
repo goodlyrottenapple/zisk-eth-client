@@ -13,11 +13,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "traits.hpp"
-#include "interpreter_types.hpp"
-#include "runtime_types.hpp"
+#include "../evm/traits.hpp"
+#include "types.hpp"
+#include "../runtime/types.hpp"
 
-#include "evmc/evmc.h"
+#include "../evmc/evmc.h"
 
 #include <cstdint>
 

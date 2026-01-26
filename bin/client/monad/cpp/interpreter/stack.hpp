@@ -16,11 +16,11 @@
 #pragma once
 
 #include "assert.h"
-#include "traits.hpp"
-#include "interpreter_types.hpp"
-#include "uint256.hpp"
+#include "../evm/traits.hpp"
+#include "types.hpp"
+#include "../runtime/uint256.hpp"
 
-#include "evmc/evmc.h"
+#include "../evmc/evmc.h"
 
 #include <cstdint>
 

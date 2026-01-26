@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime_types.hpp"
+#include "types.hpp"
 #include "uint256.hpp"
 
 namespace monad::vm::runtime

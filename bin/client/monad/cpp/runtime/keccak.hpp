@@ -15,11 +15,11 @@
 
 #pragma once
 
-#include "assert.h"
-#include "runtime_types.hpp"
+#include "../core/assert.h"
+#include "types.hpp"
 #include "uint256.hpp"
 
-#include "evmc/evmc.hpp"
+#include "../evmc/evmc.hpp"
 
 #include "ethash/keccak.hpp"
 

@@ -16,8 +16,8 @@
 #pragma once
 
 #include "intercode.hpp"
-#include "runtime_types.hpp"
-#include "uint256.hpp"
+#include "../runtime/types.hpp"
+#include "../runtime/uint256.hpp"
 
 #include <array>
 #include <cstdint>

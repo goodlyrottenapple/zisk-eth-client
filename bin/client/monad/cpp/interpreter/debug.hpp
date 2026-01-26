@@ -15,17 +15,28 @@
 
 #pragma once
 
-#include "traits.hpp"
+#include "../evm/opcodes.hpp"
+#include "../evm/traits.hpp"
 #include "intercode.hpp"
-#include "allocator.hpp"
-#include "runtime_types.hpp"
+#include "../runtime/types.hpp"
 
-#include "evmc/evmc.h"
-#include "evmc/evmc.hpp"
+#include "../evmc/evmc.h"
 
 namespace monad::vm::interpreter
 {
-    template <Traits traits>
-    void
-    execute(runtime::Context &, Intercode const &, std::uint8_t *stack_ptr);
+#ifdef MONAD_VM_INTERPRETER_DEBUG
+    constexpr auto debug_enabled = true;
+#else
+    constexpr auto debug_enabled = false;
+#endif
+
+    /**
+     * Debug trace printing - stub implementation for RISC-V
+     */
+    [[gnu::always_inline]]
+    inline void trace(
+        Intercode const &, std::int64_t, std::uint8_t const *)
+    {
+        // No-op for RISC-V - could implement later
+    }
 }

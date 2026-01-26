@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "runtime_types.hpp"
+#include "types.hpp"
 #include <csetjmp>
 
 // Portable exit implementation using setjmp/longjmp for RISC-V

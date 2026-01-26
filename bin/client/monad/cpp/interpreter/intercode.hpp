@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "bin.hpp"
+#include "../runtime/bin.hpp"
 
 #include <cstdint>
 #include <memory>

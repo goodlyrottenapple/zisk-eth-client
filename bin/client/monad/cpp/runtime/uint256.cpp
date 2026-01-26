@@ -1,7 +1,7 @@
-#include "assert.h"
+#include "../core/assert.h"
 #include "uint256.hpp"
 
-#include "intx/intx.hpp"
+#include "../intx/intx.hpp"
 
 #include <algorithm>
 #include <bit>

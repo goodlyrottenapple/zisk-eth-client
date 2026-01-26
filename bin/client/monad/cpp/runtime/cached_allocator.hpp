@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "assert.h"
+#include "../core/assert.h"
 #include "uint256.hpp"
 
 #include <cstdlib>

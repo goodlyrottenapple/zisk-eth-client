@@ -15,15 +15,15 @@
 
 #pragma once
 
-#include "opcodes.hpp"
-#include "traits.hpp"
+#include "../evm/opcodes.hpp"
+#include "../evm/traits.hpp"
 #include "intercode.hpp"
 #include "stack.hpp"
-#include "interpreter_types.hpp"
-#include "runtime_types.hpp"
-#include "uint256.hpp"
+#include "types.hpp"
+#include "../runtime/types.hpp"
+#include "../runtime/uint256.hpp"
 
-#include "evmc/evmc.h"
+#include "../evmc/evmc.h"
 
 #include <cstdint>
 #include <cstring>

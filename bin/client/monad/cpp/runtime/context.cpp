@@ -13,15 +13,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "assert.h"
-#include "cases.hpp"
+#include "../core/assert.h"
+#include "../core/cases.hpp"
 #include "allocator.hpp"
 #include "bin.hpp"
-#include "runtime_types.hpp"
+#include "types.hpp"
 #include "uint256.hpp"
 
-#include "evmc/evmc.h"
-#include "evmc/evmc.hpp"
+#include "../evmc/evmc.h"
+#include "../evmc/evmc.hpp"
 
 #include <bit>
 #include <cstdint>

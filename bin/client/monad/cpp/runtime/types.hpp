@@ -15,12 +15,12 @@
 
 #pragma once
 
-#include "assert.h"
+#include "../core/assert.h"
 #include "allocator.hpp"
 #include "bin.hpp"
 #include "uint256.hpp"
 
-#include "evmc/evmc.hpp"
+#include "../evmc/evmc.hpp"
 
 #include <csetjmp>
 #include <cstddef>
@@ -31,15 +31,6 @@
 
 namespace monad::vm::runtime
 {
-    template <std::uint64_t N>
-    requires(N < 64)
-    [[gnu::always_inline]]
-    constexpr bool is_bounded_by_bits(uint256_t const &x)
-    {
-        static constexpr std::uint64_t mask = ~((std::uint64_t{1} << N) - 1);
-        return ((x[0] & mask) | x[1] | x[2] | x[3]) == 0;
-    }
-
     enum class StatusCode : uint64_t
     {
         Success = 0,
