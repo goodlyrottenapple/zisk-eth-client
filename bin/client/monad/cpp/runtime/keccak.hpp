@@ -21,7 +21,7 @@
 
 #include "../evmc/evmc.hpp"
 
-#include "ethash/keccak.hpp"
+#include <ethash/keccak.hpp>
 
 namespace monad::vm::runtime
 {

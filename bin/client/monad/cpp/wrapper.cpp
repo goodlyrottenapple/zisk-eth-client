@@ -9,6 +9,8 @@
 #include "runtime/types.hpp"
 #include "runtime/allocator.hpp"
 #include "runtime/cached_allocator.hpp"
+// #include "evmone_host/host.hpp"
+// #include "evmone_host/test_state.hpp"
 #include "dummy_host.hpp"
 #include "interpreter/execute.hpp"
 

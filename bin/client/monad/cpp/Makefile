@@ -18,8 +18,8 @@ CFLAGS_RISCV = $(CFLAGS_COMMON) -Ilibc_riscv -march=rv64ima -mabi=lp64 -nostartf
 # Assembly flags (for .S files in RISC-V build)
 ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
 
-# Source files - automatically find all .cpp files in current directory, runtime/, interpreter/, and core/
-SOURCES = $(wildcard *.cpp) $(wildcard runtime/*.cpp) $(wildcard interpreter/*.cpp) $(wildcard core/*.cpp)
+# Source files - automatically find all .cpp files in current directory, runtime/, interpreter/, core/, and evmone_host/
+SOURCES = $(wildcard *.cpp) $(wildcard runtime/*.cpp) $(wildcard interpreter/*.cpp) $(wildcard core/*.cpp) #$(wildcard evmone_host/*.cpp)
 ASM_SOURCES_X86 = runtime/math.S interpreter/entry.S runtime/exit.S
 
 # Ethash library sources
@@ -72,6 +72,10 @@ build/x86/core/%.o: core/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
 
+build/x86/evmone_host/%.o: evmone_host/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
+
 build/x86/%_asm.o: %.S
 	@mkdir -p $(dir $@)
 	$(CXX_X86) -c $< -o $@
@@ -113,6 +117,10 @@ build/riscv/interpreter/%.o: interpreter/%.cpp
 	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
 
 build/riscv/core/%.o: core/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
+
+build/riscv/evmone_host/%.o: evmone_host/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
 
