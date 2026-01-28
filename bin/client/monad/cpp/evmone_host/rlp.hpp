@@ -5,7 +5,7 @@
 #pragma once
 
 #include "../evmc/bytes.hpp"
-#include "../intx/intx.hpp"
+#include <intx/intx.hpp>
 #include <cassert>
 #include <string>
 #include <string_view>

@@ -1,7 +1,7 @@
 // Simplified uint256 wrapper for intx library
 #pragma once
 
-#include "../intx/intx.hpp"
+#include <intx/intx.hpp>
 #include "../evmc/evmc.hpp"
 #include "../core/assert.h"
 #include <cstring>

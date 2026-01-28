@@ -1,3 +1,6 @@
 [submodule "bin/client/monad/bin/client/monad/cpp/unordered_dense"]
 	path = bin/client/monad/bin/client/monad/cpp/unordered_dense
 	url = https://github.com/martinus/unordered_dense
+[submodule "bin/client/monad/cpp/intx"]
+	path = bin/client/monad/cpp/intx
+	url = https://github.com/chfast/intx

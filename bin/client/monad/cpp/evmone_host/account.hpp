@@ -5,7 +5,7 @@
 
 #include "hash_utils.hpp"
 #include "../evmc/evmc.hpp"
-#include "../intx/intx.hpp"
+#include <intx/intx.hpp>
 #include <ankerl/unordered_dense.h>
 
 namespace evmone::state

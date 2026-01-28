@@ -6,7 +6,7 @@
 
 //TODO include "bloom_filter.hpp"
 #include "state_diff.hpp"
-#include "../intx/intx.hpp"
+#include <intx/intx.hpp>
 #include <optional>
 #include <vector>
 

@@ -5,7 +5,7 @@
 #pragma once
 
 #include "hash_utils.hpp"
-#include "../intx/intx.hpp"
+#include <intx/intx.hpp>
 #include <vector>
 
 namespace evmone::state
