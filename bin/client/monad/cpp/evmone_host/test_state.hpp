@@ -6,6 +6,7 @@
 #include "state_view.hpp"
 #include "../evmc/evmc.hpp"
 #include "../intx/intx.hpp"
+#include <ankerl/unordered_dense.h>
 #include <map>
 #include <span>
 #include <variant>
@@ -73,10 +74,10 @@ public:
     void apply(const state::StateDiff& diff);
 };
 
-class TestBlockHashes : public state::BlockHashes, public std::unordered_map<int64_t, bytes32>
+class TestBlockHashes : public state::BlockHashes, public ankerl::unordered_dense::map<int64_t, bytes32>
 {
 public:
-    using std::unordered_map<int64_t, bytes32>::unordered_map;
+    using ankerl::unordered_dense::map<int64_t, bytes32>::map;
 
     bytes32 get_block_hash(int64_t block_number) const noexcept override;
 };
@@ -97,7 +98,8 @@ void system_call_block_start(TestState& state, const state::BlockInfo& block,
     const state::BlockHashes& block_hashes, evmc_revision rev, evmc::VM& vm);
 
 /// Wrapping of state::system_call_block_end() which operates on TestState.
-std::vector<state::Requests> system_call_block_end(TestState& state, const state::BlockInfo& block,
-    const state::BlockHashes& block_hashes, evmc_revision rev, evmc::VM& vm);
+// TODO: Uncomment when Requests is properly defined
+// std::vector<state::Requests> system_call_block_end(TestState& state, const state::BlockInfo& block,
+//     const state::BlockHashes& block_hashes, evmc_revision rev, evmc::VM& vm);
 }  // namespace test
 }  // namespace evmone

@@ -21,6 +21,14 @@ namespace std {
     [[noreturn]] void __throw_bad_function_call() {
         abort();
     }
+
+    [[noreturn]] void __throw_length_error(const char*) {
+        abort();
+    }
+
+    [[noreturn]] void __throw_logic_error(const char*) {
+        abort();
+    }
 }
 
 // C++ new/delete operators

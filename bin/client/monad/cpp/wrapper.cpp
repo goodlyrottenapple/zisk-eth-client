@@ -5,22 +5,19 @@
 #include <cstring>
 #include <span>
 #include "evm/opcodes.hpp"
-#include "interpreter/intercode.hpp"
 #include "runtime/types.hpp"
 #include "runtime/allocator.hpp"
 #include "runtime/cached_allocator.hpp"
-// #include "evmone_host/host.hpp"
-// #include "evmone_host/test_state.hpp"
-#include "dummy_host.hpp"
-#include "interpreter/execute.hpp"
+#include "evmone_host/host.hpp"
+#include "evmone_host/test_state.hpp"
+#include "evmone_host/test_vm.hpp"
+#include "evmone_host/block.hpp"
+#include "evmone_host/transaction.hpp"
 
 namespace monad::vm::runtime
 {
     CachedAllocatorList EvmStackAllocatorMeta::cache_list;
     CachedAllocatorList EvmMemoryAllocatorMeta::cache_list;
-
-    // Global dummy host instance
-    static DummyHost global_dummy_host;
 }
 
 // C interface for FFI
@@ -28,6 +25,14 @@ extern "C" {
 
 // Simple memory pool for result allocation (avoids new/delete)
 static evmc_result result_storage;
+static evmone::test::TestVM* global_vm = nullptr;
+
+// Initialize the global VM
+void init_evm_vm() {
+    if (global_vm == nullptr) {
+        global_vm = new evmone::test::TestVM();
+    }
+}
 
 // Execute EVM bytecode
 // Parameters:
@@ -40,13 +45,35 @@ evmc_result* execute_evm_bytecode(
     uint32_t bytecode_len,
     int64_t gas_limit)
 {
-    using namespace monad::vm::runtime;
+    // Initialize VM if needed
+    if (global_vm == nullptr) {
+        init_evm_vm();
+    }
 
-    // Create Intercode wrapper for the bytecode
-    std::span<const uint8_t> code_span(bytecode, bytecode_len);
-    monad::vm::interpreter::Intercode icode{code_span};
+    // Create test state
+    evmone::test::TestState state;
 
-    // Create a minimal evmc_message for Context::from
+    // Create block info with default values
+    evmone::state::BlockInfo block;
+    block.number = 1;
+    block.timestamp = 0;
+    block.gas_limit = 30000000;
+    block.coinbase = evmc::address{};
+    block.difficulty = 0;
+    block.base_fee = 0;
+
+    // Create block hashes
+    evmone::test::TestBlockHashes block_hashes;
+
+    // Create transaction
+    evmone::state::Transaction tx;
+    tx.sender = evmc::address{};
+    tx.to = evmc::address{};
+    tx.gas_limit = gas_limit;
+    tx.max_gas_price = 0;
+    tx.value = 0;
+
+    // Create evmc_message
     evmc_message msg{};
     msg.kind = EVMC_CALL;
     msg.flags = 0;
@@ -56,31 +83,25 @@ evmc_result* execute_evm_bytecode(
     msg.sender = evmc::address{};
     msg.input_data = nullptr;
     msg.input_size = 0;
-    msg.value = evmc::bytes32{};
+    msg.value = evmc::uint256be{};
     msg.create2_salt = evmc::bytes32{};
+    msg.code_address = evmc::address{};
 
-    EvmMemoryAllocator mem_alloc{};
-    auto ctx = Context::from(
-        mem_alloc,
-        &evmc::Host::get_interface(),
-        global_dummy_host.to_context(),
+    // Create host
+    evmone::state::State s(state);
+    evmc::VM vm_wrapper{static_cast<evmc_vm*>(global_vm)};
+    evmone::state::Host host(EVMC_CANCUN, vm_wrapper, s, block, block_hashes, tx);
+
+    // Execute via EVMC interface
+    result_storage = global_vm->execute(
+        global_vm,
+        &host.get_interface(),
+        host.to_context(),
+        EVMC_CANCUN,
         &msg,
-        code_span
+        bytecode,
+        bytecode_len
     );
-
-    // Allocate stack for execution
-    EvmStackAllocator stack_alloc{};
-    auto stack_ptr = stack_alloc.allocate();
-
-    // Execute the bytecode using Monad Zero traits
-    using traits = monad::MonadTraits<MONAD_ZERO>;
-    monad::vm::interpreter::execute<traits>(ctx, icode, stack_ptr.get());
-
-    // Use the context's copy_to_evmc_result method to get the result
-    evmc::Result evmc_res = ctx.copy_to_evmc_result();
-
-    // Copy the result to our static storage and release ownership
-    result_storage = evmc_res.release_raw();
 
     return &result_storage;
 }

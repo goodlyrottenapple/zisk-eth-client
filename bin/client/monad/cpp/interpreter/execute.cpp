@@ -94,6 +94,38 @@ namespace monad::vm::interpreter
 #endif
     }
 
+    // Explicit instantiations for all EVM revisions
+    template void execute<EvmTraits<EVMC_FRONTIER>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_HOMESTEAD>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_TANGERINE_WHISTLE>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_SPURIOUS_DRAGON>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_BYZANTIUM>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_CONSTANTINOPLE>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_PETERSBURG>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_ISTANBUL>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_BERLIN>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_LONDON>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_PARIS>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_SHANGHAI>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_CANCUN>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_PRAGUE>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+    template void execute<EvmTraits<EVMC_OSAKA>>(
+        runtime::Context &, Intercode const &, std::uint8_t *);
+
     // Explicit instantiation for MONAD_ZERO
     template void execute<MonadTraits<MONAD_ZERO>>(
         runtime::Context &, Intercode const &, std::uint8_t *);

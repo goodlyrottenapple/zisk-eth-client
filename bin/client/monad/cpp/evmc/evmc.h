@@ -190,16 +190,6 @@ struct evmc_message
      * Defined as `c` in the Yellow Paper.
      */
     evmc_address code_address;
-
-    /**
-     * The code to be executed.
-     */
-    const uint8_t* code;
-
-    /**
-     * The length of the code to be executed.
-     */
-    size_t code_size;
 };
 
 /** The hashed initcode used for TXCREATE instruction. */

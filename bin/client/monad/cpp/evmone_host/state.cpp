@@ -191,9 +191,7 @@ evmc_message build_message(
         .input_size = tx.data.size(),
         .value = intx::be::store<evmc::uint256be>(tx.value),
         .create2_salt = {},
-        .code_address = recipient,
-        .code = nullptr,
-        .code_size = 0};
+        .code_address = recipient};
 }
 }  // namespace
 

@@ -37,6 +37,35 @@ pub struct ExecutionResult {
     pub output: Vec<u8>,
 }
 
+impl ExecutionResult {
+    pub fn status_str(&self) -> &'static str {
+        match self.status_code {
+            0 => "EVMC_SUCCESS",
+            1 => "EVMC_FAILURE",
+            2 => "EVMC_REVERT",
+            3 => "EVMC_OUT_OF_GAS",
+            4 => "EVMC_INVALID_INSTRUCTION",
+            5 => "EVMC_UNDEFINED_INSTRUCTION",
+            6 => "EVMC_STACK_OVERFLOW",
+            7 => "EVMC_STACK_UNDERFLOW",
+            8 => "EVMC_BAD_JUMP_DESTINATION",
+            9 => "EVMC_INVALID_MEMORY_ACCESS",
+            10 => "EVMC_CALL_DEPTH_EXCEEDED",
+            11 => "EVMC_STATIC_MODE_VIOLATION",
+            12 => "EVMC_PRECOMPILE_FAILURE",
+            13 => "EVMC_CONTRACT_VALIDATION_FAILURE",
+            14 => "EVMC_ARGUMENT_OUT_OF_RANGE",
+            15 => "EVMC_WASM_UNREACHABLE_INSTRUCTION",
+            16 => "EVMC_WASM_TRAP",
+            17 => "EVMC_INSUFFICIENT_BALANCE",
+            -1 => "EVMC_INTERNAL_ERROR",
+            -2 => "EVMC_REJECTED",
+            -3 => "EVMC_OUT_OF_MEMORY",
+            _ => "UNKNOWN_STATUS",
+        }
+    }
+}
+
 /// Safe wrapper around the C FFI
 pub fn execute_bytecode(bytecode: &[u8], gas_limit: i64) -> Result<ExecutionResult, String> {
     unsafe {

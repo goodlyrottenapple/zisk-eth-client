@@ -346,8 +346,9 @@ evmc::Result Host::create(const evmc_message& msg) noexcept
     new_acc->balance += value;  // The new account may be prefunded.
 
     auto create_msg = msg;
-    const auto initcode = (msg.kind == EVMC_EOFCREATE ? bytes_view{msg.code, msg.code_size} :
-                                                        bytes_view{msg.input_data, msg.input_size});
+    // For EOFCREATE, code would be in msg.code/code_size but those fields don't exist in our EVMC
+    // For now, use input_data for all create types
+    const auto initcode = bytes_view(msg.input_data, msg.input_size);
     if (msg.kind != EVMC_EOFCREATE)
     {
         create_msg.input_data = nullptr;

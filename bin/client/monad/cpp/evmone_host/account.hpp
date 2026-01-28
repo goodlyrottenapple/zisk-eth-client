@@ -6,7 +6,7 @@
 #include "hash_utils.hpp"
 #include "../evmc/evmc.hpp"
 #include "../intx/intx.hpp"
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
 
 namespace evmone::state
 {
@@ -51,10 +51,10 @@ struct Account
     bool has_initial_storage = false;
 
     /// The cached and modified account storage entries.
-    std::unordered_map<bytes32, StorageValue> storage;
+    ankerl::unordered_dense::map<bytes32, StorageValue> storage;
 
     /// The EIP-1153 transient (transaction-level lifetime) storage.
-    std::unordered_map<bytes32, bytes32> transient_storage;
+    ankerl::unordered_dense::map<bytes32, bytes32> transient_storage;
 
     /// The cache of the account code.
     ///

@@ -31,8 +31,8 @@ fn main() {
     let gas_limit = 10_000_000; // 10 million gas
     match ffi::execute_bytecode(&bytecode, gas_limit) {
         Ok(result) => {
-            println!("Execution completed successfully");
-            println!("Status: {}", result.status_code);
+            println!("Execution completed");
+            println!("Status: {} ({})", result.status_code, result.status_str());
             println!("Gas left: {}", result.gas_left);
             println!("Gas refund: {}", result.gas_refund);
             println!("Output length: {} bytes", result.output.len());
