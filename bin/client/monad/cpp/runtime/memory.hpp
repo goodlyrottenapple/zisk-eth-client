@@ -28,6 +28,7 @@ namespace monad::vm::runtime
     inline void mstore8(
         Context *ctx, uint256_t const *offset_ptr, uint256_t const *value_ptr)
     {
+        using namespace intx;
         auto offset = ctx->get_memory_offset(*offset_ptr);
         ctx->expand_memory(offset + bin<1>);
         ctx->memory.data[*offset] = as_bytes(value_ptr)[0];

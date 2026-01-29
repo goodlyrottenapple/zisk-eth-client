@@ -1,6 +1,7 @@
 // Minimal C++ library stubs for RISC-V bare metal environment
 // C library functions are provided by newlib sources in libc_riscv/ directory
 // This file only contains C++ standard library stubs that are not in libstdc++
+#if defined(__riscv)
 
 #include <cstddef>
 
@@ -55,3 +56,5 @@ void operator delete(void* ptr, size_t) noexcept {
 void operator delete[](void* ptr, size_t) noexcept {
     free(ptr);
 }
+
+#endif

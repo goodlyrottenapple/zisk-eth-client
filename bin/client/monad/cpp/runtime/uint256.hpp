@@ -16,19 +16,6 @@ namespace monad::vm::runtime
     uint256_t sar(uint256_t const &shift_index, uint256_t const &x);
     uint256_t countr_zero(uint256_t const &x);
 
-    // Extension methods for uint256_t to match the interface expected by monad runtime
-    [[gnu::always_inline]]
-    inline uint8_t const* as_bytes(uint256_t const& val) noexcept
-    {
-        return reinterpret_cast<uint8_t const*>(&val);
-    }
-
-    [[gnu::always_inline]]
-    inline uint8_t* as_bytes(uint256_t& val) noexcept
-    {
-        return reinterpret_cast<uint8_t*>(&val);
-    }
-
     [[gnu::always_inline]]
     inline void store_be(uint256_t const& val, uint8_t* dest) noexcept
     {
@@ -70,6 +57,7 @@ namespace monad::vm::runtime
     inline uint256_t
     uint256_load_bounded_be(std::uint8_t const *bytes, std::int64_t max_len)
     {
+        using namespace intx;
         if (MONAD_VM_LIKELY(max_len >= 32)) {
             // Load full 32 bytes in big-endian
             return load_be(bytes);
@@ -92,6 +80,7 @@ namespace monad::vm::runtime
     [[gnu::always_inline]]
     inline evmc::address address_from_uint256(uint256_t const &x)
     {
+        using namespace intx;
         auto const *bytes = as_bytes(x);
 
         std::uint64_t t2;

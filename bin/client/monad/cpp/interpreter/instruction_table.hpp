@@ -1722,12 +1722,12 @@ namespace monad::vm::interpreter
             runtime::StatusCode const code, runtime::Context &ctx,
             runtime::uint256_t *stack_top, std::int64_t gas_remaining)
         {
+            using namespace intx;
             for (auto *result_loc : {&ctx.result.offset, &ctx.result.size}) {
                 std::copy_n(
-                    as_bytes(stack_top),
+                    as_bytes(*stack_top),
                     32,
                     reinterpret_cast<std::uint8_t *>(result_loc));
-
                 --stack_top;
             }
 

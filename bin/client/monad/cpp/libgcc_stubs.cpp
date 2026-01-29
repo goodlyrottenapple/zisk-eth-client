@@ -12,12 +12,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#if defined(__riscv)
 
 #include <cstdint>
 
 // RISC-V libgcc function stubs
 // These replace problematic libgcc functions that cause relocation errors
-#if defined(__riscv)
 // Provide __clzdi2 to avoid pulling it from libgcc (which causes relocation errors)
 // libgcc's version uses a lookup table (__clz_tab) that causes R_RISCV_HI20 relocations
 // to be out of range.

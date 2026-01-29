@@ -46,9 +46,7 @@ evmc_result* execute_evm_bytecode(
     int64_t gas_limit)
 {
     // Initialize VM if needed
-    if (global_vm == nullptr) {
-        init_evm_vm();
-    }
+    init_evm_vm();
 
     // Create test state
     evmone::test::TestState state;

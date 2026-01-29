@@ -1,7 +1,7 @@
 // Minimal syscall stubs and allocator for zkVM environment
 // Uses Zisk's built-in sys_alloc_aligned instead of custom allocator
 
-#ifdef __riscv
+#if defined(__riscv)
 
 #include <cstddef>
 #include <cstdint>
