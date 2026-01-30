@@ -17,7 +17,7 @@
 #include "types.hpp"
 #include "../runtime/types.hpp"
 
-#include "../evmc/evmc.h"
+#include <evmc/evmc.h>
 
 #include <cstdint>
 

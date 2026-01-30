@@ -20,8 +20,8 @@
 #include "types.hpp"
 #include "uint256.hpp"
 
-#include "../evmc/evmc.h"
-#include "../evmc/evmc.hpp"
+#include <evmc/evmc.h>
+#include <evmc/evmc.hpp>
 
 #include <bit>
 #include <cstdint>

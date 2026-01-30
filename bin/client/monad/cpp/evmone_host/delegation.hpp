@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../evmc/bytes.hpp"
-#include "../evmc/evmc.hpp"
-#include "../evmc/utils.h"
+#include <evmc/bytes.hpp>
+#include <evmc/evmc.hpp>
+#include <evmc/utils.h>
 
 namespace evmone
 {

@@ -19,7 +19,7 @@
 
 #include "traits.hpp"
 
-#include "../evmc/evmc.h"
+#include <evmc/evmc.h>
 
 #define MONAD_CORE_CONCAT2(a, b) a##b
 #define MONAD_CORE_CONCAT(a, b) MONAD_CORE_CONCAT2(a, b)

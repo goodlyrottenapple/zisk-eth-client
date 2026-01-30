@@ -18,7 +18,7 @@
 #include "../evm/opcodes.hpp"
 #include "../evm/traits.hpp"
 
-#include "../evmc/evmc.hpp"
+#include <evmc/evmc.hpp>
 
 #include <array>
 #include <cstdint>

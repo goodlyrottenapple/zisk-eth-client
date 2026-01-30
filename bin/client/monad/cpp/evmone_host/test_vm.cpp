@@ -2,7 +2,7 @@
 
 #include "../evm/traits.hpp"
 
-#include "../evmc/evmc.hpp"
+#include <evmc/evmc.hpp>
 
 #include <cassert>
 #include <span>
@@ -36,74 +36,14 @@ namespace evmone::test
             auto& vm = reinterpret_cast<TestVM*>(c_vm)->vm_;
             std::span<uint8_t const> code_span{code, code_size};
 
+            // Only EVMC_CANCUN is supported
             evmc::Result result;
-            switch (rev) {
-            case EVMC_FRONTIER:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_FRONTIER>>(
-                    host, ctx, msg, code_span);
-                break;
-            case EVMC_HOMESTEAD:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_HOMESTEAD>>(
-                    host, ctx, msg, code_span);
-                break;
-            case EVMC_TANGERINE_WHISTLE:
-                result =
-                    vm.execute_bytecode_raw<monad::EvmTraits<EVMC_TANGERINE_WHISTLE>>(
-                        host, ctx, msg, code_span);
-                break;
-            case EVMC_SPURIOUS_DRAGON:
-                result =
-                    vm.execute_bytecode_raw<monad::EvmTraits<EVMC_SPURIOUS_DRAGON>>(
-                        host, ctx, msg, code_span);
-                break;
-            case EVMC_BYZANTIUM:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_BYZANTIUM>>(
-                    host, ctx, msg, code_span);
-                break;
-            case EVMC_CONSTANTINOPLE:
-                result =
-                    vm.execute_bytecode_raw<monad::EvmTraits<EVMC_CONSTANTINOPLE>>(
-                        host, ctx, msg, code_span);
-                break;
-            case EVMC_PETERSBURG:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_PETERSBURG>>(
-                    host, ctx, msg, code_span);
-                break;
-            case EVMC_ISTANBUL:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_ISTANBUL>>(
-                    host, ctx, msg, code_span);
-                break;
-            case EVMC_BERLIN:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_BERLIN>>(
-                    host, ctx, msg, code_span);
-                break;
-            case EVMC_LONDON:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_LONDON>>(
-                    host, ctx, msg, code_span);
-                break;
-            case EVMC_PARIS:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_PARIS>>(
-                    host, ctx, msg, code_span);
-                break;
-            case EVMC_SHANGHAI:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_SHANGHAI>>(
-                    host, ctx, msg, code_span);
-                break;
-            case EVMC_CANCUN:
+            if (rev == EVMC_CANCUN) {
                 result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_CANCUN>>(
                     host, ctx, msg, code_span);
-                break;
-            case EVMC_PRAGUE:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_PRAGUE>>(
-                    host, ctx, msg, code_span);
-                break;
-            case EVMC_OSAKA:
-                result = vm.execute_bytecode_raw<monad::EvmTraits<EVMC_OSAKA>>(
-                    host, ctx, msg, code_span);
-                break;
-            default:
+            } else {
+                // All other revisions are unsupported
                 result = evmc::Result{EVMC_UNDEFINED_INSTRUCTION};
-                break;
             }
 
             return result.release_raw();

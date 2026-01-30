@@ -23,7 +23,7 @@
 #include "../runtime/types.hpp"
 #include "../runtime/uint256.hpp"
 
-#include "../evmc/evmc.h"
+#include <evmc/evmc.h>
 
 #include <cstdint>
 #include <cstring>

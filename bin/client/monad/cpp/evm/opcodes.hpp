@@ -18,7 +18,7 @@
 #include "../core/assert.h"
 #include "traits.hpp"
 
-#include "../evmc/evmc.hpp"
+#include <evmc/evmc.hpp>
 
 #include <array>
 #include <cstddef>

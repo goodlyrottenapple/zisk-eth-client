@@ -5,8 +5,8 @@
 #pragma once
 
 #include <ethash/keccak.hpp>
-#include "../evmc/evmc.hpp"
-#include "../evmc/hex.hpp"
+#include <evmc/evmc.hpp>
+#include <evmc/hex.hpp>
 #include <bit>
 
 namespace evmone

@@ -2,7 +2,7 @@
 
 #include "../vm.hpp"
 
-#include "../evmc/evmc.h"
+#include <evmc/evmc.h>
 
 namespace evmone::test
 {

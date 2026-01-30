@@ -20,7 +20,7 @@
 #include "types.hpp"
 #include "uint256.hpp"
 
-#include "../evmc/evmc.hpp"
+#include <evmc/evmc.hpp>
 
 #include <array>
 

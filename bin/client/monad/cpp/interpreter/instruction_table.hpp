@@ -37,7 +37,7 @@
 #include "instructions_fwd.hpp"
 #include "../runtime/memory.hpp"
 
-#include "../evmc/evmc.h"
+#include <evmc/evmc.h>
 
 #include <array>
 #include <cstdint>

@@ -20,8 +20,8 @@
 #include "../runtime/allocator.hpp"
 #include "../runtime/types.hpp"
 
-#include "../evmc/evmc.h"
-#include "../evmc/evmc.hpp"
+#include <evmc/evmc.h>
+#include <evmc/evmc.hpp>
 
 namespace monad::vm::interpreter
 {

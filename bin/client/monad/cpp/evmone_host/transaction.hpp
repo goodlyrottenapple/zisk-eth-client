@@ -4,7 +4,7 @@
 
 #pragma once
 
-//TODO include "bloom_filter.hpp"
+#include "bloom_filter.hpp"
 #include "state_diff.hpp"
 #include <intx/intx.hpp>
 #include <optional>
@@ -119,7 +119,7 @@ struct TransactionReceipt
     /// Amount of gas used by this and previous transactions in the block.
     int64_t cumulative_gas_used = 0;
     std::vector<Log> logs;
-    //TODO BloomFilter logs_bloom_filter;
+    BloomFilter logs_bloom_filter;
     StateDiff state_diff;
 
     /// Root hash of the state after this transaction. Used only in old pre-Byzantium transactions.

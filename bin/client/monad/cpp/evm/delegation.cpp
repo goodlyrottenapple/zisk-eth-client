@@ -15,9 +15,9 @@
 
 #include "delegation.hpp"
 
-#include "../evmc/bytes.hpp"
-#include "../evmc/evmc.h"
-#include "../evmc/evmc.hpp"
+#include <evmc/bytes.hpp>
+#include <evmc/evmc.h>
+#include <evmc/evmc.hpp>
 
 #include <algorithm>
 #include <array>

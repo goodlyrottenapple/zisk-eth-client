@@ -20,7 +20,7 @@
 #include "intercode.hpp"
 #include "../runtime/types.hpp"
 
-#include "../evmc/evmc.h"
+#include <evmc/evmc.h>
 
 namespace monad::vm::interpreter
 {

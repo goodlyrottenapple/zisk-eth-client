@@ -14,7 +14,7 @@
  */
 #pragma once
 
-#include "evmc.h"
+#include <evmc/evmc.h>
 #include <stdlib.h>
 #include <string.h>
 

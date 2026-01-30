@@ -21,8 +21,8 @@
 #include "runtime/types.hpp"
 #include "vm.hpp"
 
-#include "evmc/evmc.h"
-#include "evmc/evmc.hpp"
+#include <evmc/evmc.h>
+#include <evmc/evmc.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -59,7 +59,9 @@ namespace monad::vm
         return result;
     }
 
-    EXPLICIT_TRAITS_MEMBER(VM::execute_bytecode);
+    // Explicit instantiation for EVMC_CANCUN only
+    template evmc::Result VM::execute_bytecode<EvmTraits<EVMC_CANCUN>>(
+        Host &, evmc_message const *, std::span<uint8_t const>);
 
     template <Traits traits>
     evmc::Result VM::execute_bytecode_raw(
@@ -71,7 +73,10 @@ namespace monad::vm
         return execute_bytecode_impl<traits>(rt_ctx, code);
     }
 
-    EXPLICIT_TRAITS_MEMBER(VM::execute_bytecode_raw);
+    // Explicit instantiation for EVMC_CANCUN only
+    template evmc::Result VM::execute_bytecode_raw<EvmTraits<EVMC_CANCUN>>(
+        evmc_host_interface const *, evmc_host_context *,
+        evmc_message const *, std::span<uint8_t const>);
 
     template <Traits traits>
     evmc::Result VM::execute_bytecode_impl(
@@ -83,5 +88,7 @@ namespace monad::vm
         return rt_ctx.copy_to_evmc_result();
     }
 
-    EXPLICIT_TRAITS_MEMBER(VM::execute_bytecode_impl);
+    // Explicit instantiation for EVMC_CANCUN only
+    template evmc::Result VM::execute_bytecode_impl<EvmTraits<EVMC_CANCUN>>(
+        runtime::Context &, std::span<uint8_t const>);
 }

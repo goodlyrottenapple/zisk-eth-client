@@ -18,7 +18,7 @@
 #include "../core/assert.h"
 #include "../revision.h"
 
-#include "../evmc/evmc.h"
+#include <evmc/evmc.h>
 
 #include <concepts>
 #include <limits>

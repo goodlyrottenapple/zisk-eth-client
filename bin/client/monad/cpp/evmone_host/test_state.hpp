@@ -4,7 +4,7 @@
 #pragma once
 
 #include "state_view.hpp"
-#include "../evmc/evmc.hpp"
+#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <ankerl/unordered_dense.h>
 #include <map>

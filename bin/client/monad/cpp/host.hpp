@@ -17,7 +17,7 @@
 
 #include "runtime/types.hpp"
 
-#include "evmc/evmc.hpp"
+#include <evmc/evmc.hpp>
 
 #include <exception>
 

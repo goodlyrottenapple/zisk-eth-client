@@ -2,7 +2,7 @@
 #pragma once
 
 #include <intx/intx.hpp>
-#include "../evmc/evmc.hpp"
+#include <evmc/evmc.hpp>
 #include "../core/assert.h"
 #include <cstring>
 #include <algorithm>
