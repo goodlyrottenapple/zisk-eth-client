@@ -1,0 +1,26 @@
+--- lib/keccak/keccak.c
++++ lib/keccak/keccak.c
+@@ -273,12 +273,22 @@
+     keccakf1600_implementation(state);
+ }
+ 
++// Zisk hardware-accelerated keccak-f[1600] implementation
++#if defined(__riscv)
++extern void syscall_keccak_f(uint64_t state[25]);
++
++/// The pointer to the best Keccak-f[1600] function implementation,
++/// For zisk target, use syscall
++static void (*keccakf1600_best)(uint64_t[25]) = syscall_keccak_f;
++#else
+ /// The pointer to the best Keccak-f[1600] function implementation,
+ /// selected during runtime initialization.
+ static void (*keccakf1600_best)(uint64_t[25]) = keccakf1600_generic;
++#endif
+ 
+ 
+-#if !defined(_MSC_VER) && defined(__x86_64__) && __has_attribute(target)
++// x86 BMI optimization (not used on zisk/RISC-V)
++#if !defined(__riscv) && !defined(_MSC_VER) && defined(__x86_64__) && __has_attribute(target)
+ __attribute__((target("bmi,bmi2"))) static void keccakf1600_bmi(uint64_t state[25])
+ {
+     keccakf1600_implementation(state);

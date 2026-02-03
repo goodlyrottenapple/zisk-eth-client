@@ -7,3 +7,6 @@
 [submodule "bin/client/monad/cpp/third_party/unordered_dense"]
 	path = bin/client/monad/cpp/third_party/unordered_dense
 	url = https://github.com/martinus/unordered_dense
+[submodule "bin/client/monad/cpp/third_party/ethash"]
+	path = bin/client/monad/cpp/third_party/ethash
+	url = https://github.com/chfast/ethash.git

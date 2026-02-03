@@ -89,11 +89,22 @@ OBJECTS_RISCV = $(patsubst %.cpp,build/riscv/%.o,$(SOURCES_RISCV)) \
 LIB_X86 = build/x86/libmonad_wrapper.a
 LIB_RISCV = build/riscv/libmonad_wrapper.a
 
+# Patch marker file
+PATCH_MARKER = third_party/ethash/.patches_applied
+
 # Default target
 all: x86
 
+# Apply patches to third-party libraries
+apply-patches: $(PATCH_MARKER)
+
+$(PATCH_MARKER):
+	@echo "Applying patches to ethash..."
+	@cd third_party/ethash && patch -p0 < ../../patches/ethash-zisk-keccak.patch
+	@touch $(PATCH_MARKER)
+
 # x86 target using standard g++
-x86: $(LIB_X86)
+x86: apply-patches $(LIB_X86)
 
 $(LIB_X86): $(OBJECTS_X86)
 	@mkdir -p build/x86
@@ -161,10 +172,10 @@ build/x86/libff_%.o: third_party/silkpre/third_party/libff/libff/%.cpp
 # Secp256k1 library compilation for x86
 build/x86/secp256k1_%.o: third_party/silkpre/third_party/secp256k1/src/%.c
 	@mkdir -p $(dir $@)
-	$(CC_X86) $(CFLAGS_X86) -c $< -o $@
+	$(CC_X86) $(CFLAGS_X86) -DECMULT_GEN_PREC_BITS=4 -DECMULT_WINDOW_SIZE=15 -c $< -o $@
 
 # RISC-V target using riscv64-unknown-elf-g++
-riscv: $(LIB_RISCV)
+riscv: apply-patches $(LIB_RISCV)
 
 $(LIB_RISCV): $(OBJECTS_RISCV)
 	@mkdir -p build/riscv
@@ -224,7 +235,7 @@ build/riscv/libff_%.o: third_party/silkpre/third_party/libff/libff/%.cpp
 # Secp256k1 library compilation for RISC-V
 build/riscv/secp256k1_%.o: third_party/silkpre/third_party/secp256k1/src/%.c
 	@mkdir -p $(dir $@)
-	$(CC_RISCV) $(CFLAGS_RISCV) -c $< -o $@
+	$(CC_RISCV) $(CFLAGS_RISCV) -DECMULT_GEN_PREC_BITS=4 -DECMULT_WINDOW_SIZE=15 -c $< -o $@
 
 # Mini-GMP library compilation for RISC-V
 build/riscv/mini_gmp_%.o: third_party/gmp/mini-gmp/%.c
@@ -239,5 +250,7 @@ build/riscv/gmp_mini_compat.o: gmp_mini_compat.c
 # Clean build artifacts
 clean:
 	rm -rf build
+	rm -f third_party/ethash/.patches_applied
+	@cd third_party/ethash && git checkout -f lib/keccak/keccak.c 2>/dev/null || true
 
-.PHONY: all x86 riscv clean
+.PHONY: all x86 riscv clean apply-patches
