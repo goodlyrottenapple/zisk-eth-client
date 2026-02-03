@@ -1,6 +1,9 @@
-[submodule "bin/client/monad/bin/client/monad/cpp/unordered_dense"]
-	path = bin/client/monad/bin/client/monad/cpp/unordered_dense
+[submodule "bin/client/monad/bin/client/monad/cpp/third_party/unordered_dense"]
+	path = bin/client/monad/bin/client/monad/cpp/third_party/unordered_dense
 	url = https://github.com/martinus/unordered_dense
-[submodule "bin/client/monad/cpp/intx"]
-	path = bin/client/monad/cpp/intx
+[submodule "bin/client/monad/cpp/third_party/intx"]
+	path = bin/client/monad/cpp/third_party/intx
 	url = https://github.com/chfast/intx
+[submodule "bin/client/monad/cpp/third_party/silkpre"]
+	path = bin/client/monad/cpp/third_party/silkpre
+	url = https://github.com/category-labs/silkpre.git
