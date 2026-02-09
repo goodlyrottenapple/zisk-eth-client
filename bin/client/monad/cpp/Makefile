@@ -6,12 +6,12 @@ CC_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-gcc
 AR_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-ar
 
 # Compiler flags
-CXXFLAGS_COMMON = -std=c++23 -O3 -Ithird_party/evmc/include -Ithird_party/intx/include -Ithird_party/ethash/include -Ithird_party/unordered_dense/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/libff -Ithird_party/silkpre/third_party/secp256k1/include
+CXXFLAGS_COMMON = -std=c++23 -O3 -Ithird_party/evmc/include -Ithird_party/intx/include -Ithird_party/ethash/include -Ithird_party/unordered_dense/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/libff -Ithird_party/silkpre/third_party/secp256k1/include -Ithird_party/blst/bindings
 CXXFLAGS_X86 = $(CXXFLAGS_COMMON) -fPIC
 CXXFLAGS_RISCV = $(CXXFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DGMP_NUMB_BITS=64
 
 # C compiler flags (for .c files)
-CFLAGS_COMMON = -O3 -Ithird_party/ethash/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/secp256k1/include
+CFLAGS_COMMON = -O3 -Ithird_party/ethash/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/secp256k1/include -Ithird_party/blst/bindings
 CFLAGS_X86 = $(CFLAGS_COMMON) -fPIC
 # RISC-V needs secp256k1 configuration flags
 CFLAGS_RISCV = $(CFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -ffunction-sections -fdata-sections -DUSE_NUM_NONE -DUSE_FIELD_INV_BUILTIN -DUSE_SCALAR_INV_BUILTIN -DUSE_FIELD_5X52 -DUSE_SCALAR_4X64 -DHAVE___INT128 -DECMULT_WINDOW_SIZE=15 -DECMULT_GEN_PREC_BITS=4 -DUSE_ENDOMORPHISM -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -DGMP_NUMB_BITS=64
@@ -20,7 +20,7 @@ CFLAGS_RISCV = $(CFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=r
 ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
 
 # Common source files for both targets
-SOURCES_COMMON = $(wildcard *.cpp) $(wildcard runtime/*.cpp) $(wildcard interpreter/*.cpp) $(wildcard core/*.cpp) $(wildcard evm/*.cpp) $(wildcard evmone_host/*.cpp)
+SOURCES_COMMON = $(wildcard *.cpp) $(wildcard runtime/*.cpp) $(wildcard interpreter/*.cpp) $(wildcard core/*.cpp) $(wildcard evm/*.cpp) $(wildcard evmone_host/*.cpp) $(wildcard execution/ethereum/*.cpp)
 
 # Both x86 and RISC-V use the same sources
 SOURCES_X86 = $(SOURCES_COMMON)
@@ -47,6 +47,10 @@ LIBFF_CPP_SOURCES = third_party/silkpre/third_party/libff/libff/algebra/curves/a
 # Secp256k1 library source (unity build)
 SECP256K1_C_SOURCES = third_party/silkpre/third_party/secp256k1/src/secp256k1.c
 
+# BLST library sources
+BLST_C_SOURCES = third_party/blst/src/server.c
+BLST_ASM_SOURCES = third_party/blst/build/assembly.S
+
 # Mini-GMP library source (for RISC-V bare-metal)
 MINI_GMP_C_SOURCES = third_party/gmp/mini-gmp/mini-gmp.c
 GMP_COMPAT_C_SOURCES = gmp_mini_compat.c
@@ -58,12 +62,15 @@ SILKPRE_OBJECTS_X86 = $(patsubst third_party/silkpre/lib/%.cpp,build/x86/silkpre
                       $(patsubst third_party/silkpre/lib/%.c,build/x86/silkpre_%.o,$(SILKPRE_C_SOURCES))
 LIBFF_OBJECTS_X86 = $(patsubst third_party/silkpre/third_party/libff/libff/%.cpp,build/x86/libff_%.o,$(LIBFF_CPP_SOURCES))
 SECP256K1_OBJECTS_X86 = $(patsubst third_party/silkpre/third_party/secp256k1/src/%.c,build/x86/secp256k1_%.o,$(SECP256K1_C_SOURCES))
+BLST_OBJECTS_X86 = $(patsubst third_party/blst/src/%.c,build/x86/blst_%.o,$(BLST_C_SOURCES)) \
+                   $(patsubst third_party/blst/build/%.S,build/x86/blst_%.o,$(BLST_ASM_SOURCES))
 OBJECTS_X86 = $(patsubst %.cpp,build/x86/%.o,$(SOURCES_X86)) \
               $(patsubst %.S,build/x86/%_asm.o,$(ASM_SOURCES_X86)) \
               $(ETHASH_OBJECTS_X86) \
               $(SILKPRE_OBJECTS_X86) \
               $(LIBFF_OBJECTS_X86) \
-              $(SECP256K1_OBJECTS_X86)
+              $(SECP256K1_OBJECTS_X86) \
+              $(BLST_OBJECTS_X86)
 
 # For RISC-V: cpp files + newlib C library sources
 LIBC_ASM_SOURCES = $(wildcard libc_riscv/*.S)
@@ -74,6 +81,8 @@ SILKPRE_OBJECTS_RISCV = $(patsubst third_party/silkpre/lib/%.cpp,build/riscv/sil
                         $(patsubst third_party/silkpre/lib/%.c,build/riscv/silkpre_%.o,$(SILKPRE_C_SOURCES))
 LIBFF_OBJECTS_RISCV = $(patsubst third_party/silkpre/third_party/libff/libff/%.cpp,build/riscv/libff_%.o,$(LIBFF_CPP_SOURCES))
 SECP256K1_OBJECTS_RISCV = $(patsubst third_party/silkpre/third_party/secp256k1/src/%.c,build/riscv/secp256k1_%.o,$(SECP256K1_C_SOURCES))
+# BLST not included for RISC-V (heavily relies on x86/ARM assembly optimizations)
+# BLST_OBJECTS_RISCV = $(patsubst third_party/blst/src/%.c,build/riscv/blst_%.o,$(BLST_C_SOURCES))
 MINI_GMP_OBJECTS_RISCV = $(patsubst third_party/gmp/mini-gmp/%.c,build/riscv/mini_gmp_%.o,$(MINI_GMP_C_SOURCES))
 GMP_COMPAT_OBJECTS_RISCV = $(patsubst %.c,build/riscv/%.o,$(GMP_COMPAT_C_SOURCES))
 OBJECTS_RISCV = $(patsubst %.cpp,build/riscv/%.o,$(SOURCES_RISCV)) \
@@ -134,6 +143,10 @@ build/x86/evmone_host/%.o: evmone_host/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
 
+build/x86/execution/ethereum/%.o: execution/ethereum/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
+
 build/x86/%_asm.o: %.S
 	@mkdir -p $(dir $@)
 	$(CXX_X86) -c $< -o $@
@@ -174,6 +187,15 @@ build/x86/secp256k1_%.o: third_party/silkpre/third_party/secp256k1/src/%.c
 	@mkdir -p $(dir $@)
 	$(CC_X86) $(CFLAGS_X86) -DECMULT_GEN_PREC_BITS=4 -DECMULT_WINDOW_SIZE=15 -c $< -o $@
 
+# BLST library compilation for x86
+build/x86/blst_server.o: third_party/blst/src/server.c
+	@mkdir -p $(dir $@)
+	$(CC_X86) $(CFLAGS_X86) -D__ADX__ -c $< -o $@
+
+build/x86/blst_assembly.o: third_party/blst/build/assembly.S
+	@mkdir -p $(dir $@)
+	$(CC_X86) $(CFLAGS_X86) -c $< -o $@
+
 # RISC-V target using riscv64-unknown-elf-g++
 riscv: apply-patches $(LIB_RISCV)
 
@@ -202,6 +224,10 @@ build/riscv/evm/%.o: evm/%.cpp
 	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
 
 build/riscv/evmone_host/%.o: evmone_host/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
+
+build/riscv/execution/ethereum/%.o: execution/ethereum/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
 

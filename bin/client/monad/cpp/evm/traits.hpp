@@ -100,6 +100,21 @@ namespace monad
             return Rev >= EVMC_OSAKA;
         }
 
+        static consteval bool eip_2565_active() noexcept
+        {
+            return Rev >= EVMC_BERLIN;
+        }
+
+        static consteval bool eip_7823_active() noexcept
+        {
+            return Rev >= EVMC_OSAKA;
+        }
+
+        static consteval bool eip_7883_active() noexcept
+        {
+            return Rev >= EVMC_OSAKA;
+        }
+
         static consteval bool can_create_inside_delegated() noexcept
         {
             return true;
