@@ -21,7 +21,7 @@ ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
 
 # Common source files for both targets
 # Note: libff_stubs.cpp provides stub implementations for libff profiling functions
-SOURCES_COMMON = $(wildcard *.cpp) $(wildcard runtime/*.cpp) $(wildcard interpreter/*.cpp) $(wildcard core/*.cpp) $(wildcard evm/*.cpp) $(wildcard evmone_host/*.cpp) $(wildcard execution/ethereum/*.cpp)
+SOURCES_COMMON = $(wildcard *.cpp) $(wildcard runtime/*.cpp) $(wildcard interpreter/*.cpp) $(wildcard core/*.cpp) $(wildcard evm/*.cpp) $(wildcard evmone_host/*.cpp) $(wildcard execution/ethereum/*.cpp) $(wildcard evmone_test/*.cpp)
 
 # Both x86 and RISC-V use the same sources, except RISC-V excludes BLST-dependent files
 SOURCES_X86 = $(SOURCES_COMMON)
@@ -148,6 +148,10 @@ build/x86/execution/ethereum/%.o: execution/ethereum/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
 
+build/x86/evmone_test/%.o: evmone_test/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
+
 build/x86/%_asm.o: %.S
 	@mkdir -p $(dir $@)
 	$(CXX_X86) -c $< -o $@
@@ -229,6 +233,10 @@ build/riscv/evmone_host/%.o: evmone_host/%.cpp
 	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
 
 build/riscv/execution/ethereum/%.o: execution/ethereum/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
+
+build/riscv/evmone_test/%.o: evmone_test/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV) $(CXXFLAGS_RISCV) -c $< -o $@
 
