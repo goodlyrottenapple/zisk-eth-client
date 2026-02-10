@@ -98,8 +98,7 @@ void system_call_block_start(TestState& state, const state::BlockInfo& block,
     const state::BlockHashes& block_hashes, evmc_revision rev, evmc::VM& vm);
 
 /// Wrapping of state::system_call_block_end() which operates on TestState.
-// TODO: Uncomment when Requests is properly defined
-// std::vector<state::Requests> system_call_block_end(TestState& state, const state::BlockInfo& block,
-//     const state::BlockHashes& block_hashes, evmc_revision rev, evmc::VM& vm);
+std::vector<state::Requests> system_call_block_end(TestState& state, const state::BlockInfo& block,
+    const state::BlockHashes& block_hashes, evmc_revision rev, evmc::VM& vm);
 }  // namespace test
 }  // namespace evmone

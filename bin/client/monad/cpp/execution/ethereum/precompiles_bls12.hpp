@@ -20,6 +20,12 @@
 #include "precompiles.hpp"
 
 #include <blst.h>
+
+// Include zisk patch for RISC-V builds to replace BLST functions with zisklib calls
+#if defined(__riscv)
+#include "blst_zisk_patch.hpp"
+#endif
+
 #include <intx/intx.hpp>
 
 #include <cstdint>
@@ -101,12 +107,20 @@ namespace bls12
         DECLARE_GROUP_FN(read, read_g1);
         DECLARE_GROUP_FN(read_element, read_fp);
         DECLARE_GROUP_FN(write, write_g1);
+#if defined(__riscv)
+        DECLARE_GROUP_FN(add, blst_p1_add_or_double_affine_zisk);
+#else
         DECLARE_GROUP_FN(add, blst_p1_add_or_double_affine);
+#endif
         DECLARE_GROUP_FN(map_to_group, blst_map_to_g1);
         DECLARE_GROUP_FN(point_in_group, blst_p1_in_g1);
         DECLARE_GROUP_FN(affine_point_in_group, blst_p1_affine_in_g1);
         DECLARE_GROUP_FN(affine_point_is_inf, blst_p1_affine_is_inf);
+#if defined(__riscv)
+        DECLARE_GROUP_FN(mul, blst_p1_mult_zisk);
+#else
         DECLARE_GROUP_FN(mul, blst_p1_mult);
+#endif
         DECLARE_GROUP_FN(
             msm_scratch_size, blst_p1s_mult_pippenger_scratch_sizeof);
         DECLARE_GROUP_FN(msm, blst_p1s_mult_pippenger);
@@ -127,12 +141,20 @@ namespace bls12
         DECLARE_GROUP_FN(read, read_g2);
         DECLARE_GROUP_FN(read_element, read_fp2);
         DECLARE_GROUP_FN(write, write_g2);
+#if defined(__riscv)
+        DECLARE_GROUP_FN(add, blst_p2_add_or_double_affine_zisk);
+#else
         DECLARE_GROUP_FN(add, blst_p2_add_or_double_affine);
+#endif
         DECLARE_GROUP_FN(map_to_group, blst_map_to_g2);
         DECLARE_GROUP_FN(point_in_group, blst_p2_in_g2);
         DECLARE_GROUP_FN(affine_point_in_group, blst_p2_affine_in_g2);
         DECLARE_GROUP_FN(affine_point_is_inf, blst_p2_affine_is_inf);
+#if defined(__riscv)
+        DECLARE_GROUP_FN(mul, blst_p2_mult_zisk);
+#else
         DECLARE_GROUP_FN(mul, blst_p2_mult);
+#endif
         DECLARE_GROUP_FN(
             msm_scratch_size, blst_p2s_mult_pippenger_scratch_sizeof);
         DECLARE_GROUP_FN(msm, blst_p2s_mult_pippenger);

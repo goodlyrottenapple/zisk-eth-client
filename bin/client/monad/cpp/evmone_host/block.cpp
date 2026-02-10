@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "block.hpp"
-//TODO #include "rlp.hpp"
+#include "rlp.hpp"
 
 namespace evmone::state
 {
@@ -66,8 +66,7 @@ uint64_t calc_excess_blob_gas(
 
 [[nodiscard]] bytes rlp_encode(const Withdrawal& withdrawal)
 {
-    // TODO return rlp::encode_tuple(withdrawal.index, withdrawal.validator_index, withdrawal.recipient,
-    //     withdrawal.amount_in_gwei);
-    return bytes{};
+    return rlp::encode_tuple(withdrawal.index, withdrawal.validator_index, withdrawal.recipient,
+        withdrawal.amount_in_gwei);
 }
 }  // namespace evmone::state

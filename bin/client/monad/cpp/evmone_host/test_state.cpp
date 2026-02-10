@@ -4,7 +4,7 @@
 #include "hash_utils.hpp"
 #include "test_state.hpp"
 #include "state.hpp"
-//TODO #include "system_contracts.hpp"
+#include "system_contracts.hpp"
 
 namespace evmone::test
 {
@@ -98,16 +98,15 @@ void finalize(TestState& state, evmc_revision rev, const address& coinbase,
 void system_call_block_start(TestState& state, const state::BlockInfo& block,
     const state::BlockHashes& block_hashes, evmc_revision rev, evmc::VM& vm)
 {
-    // const auto diff = state::system_call_block_start(state, block, block_hashes, rev, vm);
-    // state.apply(diff);
+    const auto diff = state::system_call_block_start(state, block, block_hashes, rev, vm);
+    state.apply(diff);
 }
 
-// TODO: Uncomment when Requests is properly defined
-// std::vector<state::Requests> system_call_block_end(TestState& state, const state::BlockInfo& block,
-//     const state::BlockHashes& block_hashes, evmc_revision rev, evmc::VM& vm)
-// {
-//     //TODO const auto [diff, requests] = state::system_call_block_end(state, block, block_hashes, rev, vm);
-//     //TODO state.apply(diff);
-//     return {}; //TODOrequests;
-// }
+std::vector<state::Requests> system_call_block_end(TestState& state, const state::BlockInfo& block,
+    const state::BlockHashes& block_hashes, evmc_revision rev, evmc::VM& vm)
+{
+    const auto [diff, requests] = state::system_call_block_end(state, block, block_hashes, rev, vm);
+    state.apply(diff);
+    return requests;
+}
 }  // namespace evmone::test

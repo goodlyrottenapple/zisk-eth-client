@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <sys/reent.h>
 
 extern "C" {
 
@@ -107,6 +108,28 @@ void* _sbrk(intptr_t increment) {
     // Not used when we have malloc implemented via sys_alloc_aligned
     // Return error to indicate sbrk is not supported
     return (void*)-1;
+}
+
+// Newlib's _impure_ptr for errno and stdio state
+// We provide a minimal stub since we don't use stdio in zkVM
+// Note: struct _reent is defined by newlib in sys/reent.h
+static struct _reent impure_data = {0};
+struct _reent* _impure_ptr = &impure_data;
+
+// Stub fprintf - we don't support stdio in zkVM
+int fprintf(void* stream, const char* format, ...) {
+    (void)stream;
+    (void)format;
+    return 0;
+}
+
+// Stub __assert_func - assertions will just abort in zkVM
+void __assert_func(const char* file, int line, const char* func, const char* failedexpr) {
+    (void)file;
+    (void)line;
+    (void)func;
+    (void)failedexpr;
+    abort();
 }
 
 } // extern "C"

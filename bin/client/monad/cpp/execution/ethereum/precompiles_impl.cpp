@@ -18,12 +18,7 @@
 #include "../../core/bytes.hpp"
 #include "precompiles.hpp"
 
-// Conditionally include BLS12-381 implementation
-#if defined(__riscv)
-#include "precompiles_bls12_riscv.hpp"
-#else
 #include "precompiles_bls12.hpp"
-#endif
 
 // TODO: Add these libraries to enable additional precompiles
 // #include <cryptopp/eccrypto.h>

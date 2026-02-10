@@ -20,11 +20,12 @@ CFLAGS_RISCV = $(CFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=r
 ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
 
 # Common source files for both targets
+# Note: libff_stubs.cpp provides stub implementations for libff profiling functions
 SOURCES_COMMON = $(wildcard *.cpp) $(wildcard runtime/*.cpp) $(wildcard interpreter/*.cpp) $(wildcard core/*.cpp) $(wildcard evm/*.cpp) $(wildcard evmone_host/*.cpp) $(wildcard execution/ethereum/*.cpp)
 
-# Both x86 and RISC-V use the same sources
+# Both x86 and RISC-V use the same sources, except RISC-V excludes BLST-dependent files
 SOURCES_X86 = $(SOURCES_COMMON)
-SOURCES_RISCV = $(SOURCES_COMMON)
+SOURCES_RISCV = $(filter-out execution/ethereum/precompiles_bls12.cpp,$(SOURCES_COMMON))
 
 ASM_SOURCES_X86 = runtime/math.S interpreter/entry.S runtime/exit.S
 
@@ -185,7 +186,7 @@ build/x86/libff_%.o: third_party/silkpre/third_party/libff/libff/%.cpp
 # Secp256k1 library compilation for x86
 build/x86/secp256k1_%.o: third_party/silkpre/third_party/secp256k1/src/%.c
 	@mkdir -p $(dir $@)
-	$(CC_X86) $(CFLAGS_X86) -DECMULT_GEN_PREC_BITS=4 -DECMULT_WINDOW_SIZE=15 -c $< -o $@
+	$(CC_X86) $(CFLAGS_X86) -DECMULT_GEN_PREC_BITS=4 -DECMULT_WINDOW_SIZE=15 -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -c $< -o $@
 
 # BLST library compilation for x86
 build/x86/blst_server.o: third_party/blst/src/server.c
@@ -194,7 +195,7 @@ build/x86/blst_server.o: third_party/blst/src/server.c
 
 build/x86/blst_assembly.o: third_party/blst/build/assembly.S
 	@mkdir -p $(dir $@)
-	$(CC_X86) $(CFLAGS_X86) -c $< -o $@
+	$(CC_X86) $(CFLAGS_X86) -D__ADX__ -c $< -o $@
 
 # RISC-V target using riscv64-unknown-elf-g++
 riscv: apply-patches $(LIB_RISCV)

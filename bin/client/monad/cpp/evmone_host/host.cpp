@@ -4,7 +4,9 @@
 
 #include "host.hpp"
 // TODO #include "hash_utils.hpp"
-// TODO #include "precompiles.hpp"
+#include "../execution/ethereum/precompiles.hpp"
+#include "../evm/traits.hpp"
+
 // #include "../evmone/constants.hpp"
 // #include "../evmone/eof.hpp"
 
@@ -259,55 +261,16 @@ std::optional<evmc_message> Host::prepare_message(evmc_message msg) noexcept
             const auto creation_sender_nonce = sender_acc.nonce - 1;
             if (msg.kind == EVMC_CREATE)
                 msg.recipient = compute_create_address(msg.sender, creation_sender_nonce);
-            else
+            else if (msg.kind == EVMC_CREATE2)
             {
-                assert (msg.kind == EVMC_CREATE2);
                 msg.recipient = compute_create2_address(
                     msg.sender, msg.create2_salt, {msg.input_data, msg.input_size});
             }
-            // else
-            // {
-            //     assert(msg.kind == EVMC_EOFCREATE);
-            //     const bytes_view input = {msg.input_data, msg.input_size};
-
-            //     // Indicator of an EOF creation tx - EVMC_EOFCREATE at depth 0.
-            //     if (msg.depth == 0)
-            //     {
-            //         // Assert this is a legacy EOF creation tx.
-            //         assert(is_eof_container(input));
-            //         const auto header_or_error = validate_header(m_rev, input);
-
-            //         const auto* header = std::get_if<EOF1Header>(&header_or_error);
-            //         if (header == nullptr)
-            //             return {};  // Light early exception.
-
-            //         if (!header->has_full_data(msg.input_size))
-            //             return {};  // Light early exception.
-
-            //         const auto container_size =
-            //             static_cast<size_t>(header->data_offset + header->data_size);
-            //         // Follows from the header->can_init condition above.
-            //         assert(container_size <= msg.input_size);
-
-            //         msg.code = msg.input_data;
-            //         msg.code_size = container_size;
-            //         msg.input_data = msg.input_data + container_size;
-            //         msg.input_size = msg.input_size - container_size;
-
-            //         if (validate_eof(m_rev, ContainerKind::initcode, {msg.code, msg.code_size}) !=
-            //             EOFValidationError::success)
-            //             return {};  // Light early exception.
-
-            //         msg.recipient = compute_create_address(msg.sender, creation_sender_nonce);
-            //     }
-            //     // EOFCREATE
-            //     else
-            //     {
-            //         const bytes_view initcontainer{msg.code, msg.code_size};
-            //         msg.recipient =
-            //             compute_create2_address(msg.sender, msg.create2_salt, initcontainer);
-            //     }
-            // }
+            else
+            {
+                assert(msg.kind == EVMC_EOFCREATE);
+                assert(false);
+            }
 
             // By EIP-2929, the access to new created address is never reverted.
             access_account(msg.recipient);
@@ -450,13 +413,20 @@ evmc::Result Host::execute_message(const evmc_message& msg) noexcept
     // Calls to precompile address via EIP-7702 delegation execute empty code instead of precompile.
     //TODO if ((msg.flags & EVMC_DELEGATED) == 0 && is_precompile(m_rev, msg.code_address))
         // return call_precompile(m_rev, msg);
+    if (auto maybe_result =
+            monad::check_call_eth_precompile<monad::EvmTraits<EVMC_CANCUN>>(msg);
+        maybe_result.has_value()) {
+        return std::move(maybe_result.value());
+    }
+    else {
 
-    // TODO: get_code() performs the account lookup. Add a way to get an account with code?
-    const auto code = m_state.get_code(msg.code_address);
-    if (code.empty())
-        return evmc::Result{EVMC_SUCCESS, msg.gas};  // Skip trivial execution.
+        // TODO: get_code() performs the account lookup. Add a way to get an account with code?
+        const auto code = m_state.get_code(msg.code_address);
+        if (code.empty())
+            return evmc::Result{EVMC_SUCCESS, msg.gas};  // Skip trivial execution.
 
-    return m_vm.execute(*this, m_rev, msg, code.data(), code.size());
+        return m_vm.execute(*this, m_rev, msg, code.data(), code.size());
+    }
 }
 
 evmc::Result Host::call(const evmc_message& orig_msg) noexcept
