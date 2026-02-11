@@ -11,24 +11,6 @@
 namespace evmone::test
 {
 
-struct RejectedTransaction
-{
-    hash256 hash;
-    size_t index;
-    std::string message;
-};
-
-struct TransitionResult
-{
-    std::vector<state::TransactionReceipt> receipts;
-    std::vector<RejectedTransaction> rejected;
-    std::vector<state::Requests> requests;
-    int64_t gas_used;
-    state::BloomFilter bloom;
-    int64_t blob_gas_left;
-    TestState block_state;
-};
-
 // Helper functions for blockchain test execution
 TransitionResult apply_block(TestState& state, evmc::VM& vm, const state::BlockInfo& block,
     const state::BlockHashes& block_hashes, const std::vector<state::Transaction>& txs,

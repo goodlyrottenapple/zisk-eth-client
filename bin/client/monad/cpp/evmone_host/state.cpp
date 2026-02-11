@@ -615,6 +615,9 @@ TransactionReceipt transition(const StateView& state_view, const BlockInfo& bloc
     }
 
     const auto result = host.call(message);
+    printf("DEBUG: tx.gas_limit = %ld\n", tx.gas_limit);
+    printf("DEBUG: result.gas_left = %ld\n", result.gas_left);
+    printf("DEBUG: result.status_code = %d\n", result.status_code);
 
     auto gas_used = tx.gas_limit - result.gas_left;
 
@@ -627,7 +630,8 @@ TransactionReceipt transition(const StateView& state_view, const BlockInfo& bloc
     // EIP-7623: The gas used by the transaction must be at least the min_gas_cost.
     gas_used = std::max(gas_used, tx_props.min_gas_cost);
 
-    sender_acc.balance += tx_max_cost - gas_used * effective_gas_price;
+    auto &sender_acc2 = state.get(tx.sender);
+    sender_acc2.balance += tx_max_cost - gas_used * effective_gas_price;
     state.touch(block.coinbase).balance += gas_used * priority_gas_price;
 
     // Cumulative gas used is unknown in this scope.
@@ -636,7 +640,7 @@ TransactionReceipt transition(const StateView& state_view, const BlockInfo& bloc
         state.build_diff(rev)};
 
     // Cannot put it into constructor call because logs are std::moved from host instance.
-    // TODO: receipt.logs_bloom_filter = compute_bloom_filter(receipt.logs);
+    receipt.logs_bloom_filter = compute_bloom_filter(receipt.logs);
 
     return receipt;
 }

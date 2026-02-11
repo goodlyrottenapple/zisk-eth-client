@@ -29,7 +29,11 @@ uint8_t from_json<uint8_t>(const json::json& j)
 {
     const auto ret = std::stoul(j.get<std::string>(), nullptr, 16);
     if (ret > std::numeric_limits<uint8_t>::max())
+#ifdef __riscv
+        std::terminate();
+#else
         throw std::out_of_range("from_json<uint8_t>: value > 0xFF");
+#endif
 
     return static_cast<uint8_t>(ret);
 }
@@ -60,7 +64,11 @@ int64_t from_json<int64_t>(const json::json& j)
 {
     const auto v = integer_from_json<int64_t>(j);
     if (!v.has_value())
+#ifdef __riscv
+        std::terminate();
+#else
         throw std::invalid_argument("from_json<int64_t>: must be integer or string of integer");
+#endif
     return *v;
 }
 
@@ -69,7 +77,11 @@ uint64_t from_json<uint64_t>(const json::json& j)
 {
     const auto v = integer_from_json<uint64_t>(j);
     if (!v.has_value())
+#ifdef __riscv
+        std::terminate();
+#else
         throw std::invalid_argument("from_json<uint64_t>: must be integer or string of integer");
+#endif
     return *v;
 }
 
@@ -94,7 +106,11 @@ hash256 from_json<hash256>(const json::json& j)
 
     const auto opt_hash = evmc::from_hex<hash256>(s);
     if (!opt_hash)
+#ifdef __riscv
+        std::terminate();
+#else
         throw std::invalid_argument("invalid hash: " + s);
+#endif
     return *opt_hash;
 }
 
@@ -340,8 +356,12 @@ static void from_json_tx_common(const json::json& j, state::Transaction& o)
         o.max_priority_gas_price = o.max_gas_price;
         if (j.contains("maxFeePerGas") || j.contains("maxPriorityFeePerGas"))
         {
+#ifdef __riscv
+            std::terminate();
+#else
             throw std::invalid_argument(
                 "invalid transaction: contains both legacy and EIP-1559 fees");
+#endif
         }
     }
     else
@@ -397,8 +417,12 @@ state::Transaction from_json<state::Transaction>(const json::json& j)
         const auto inferred_type = stdx::to_underlying(o.type);
         const auto type = from_json<uint8_t>(*type_it);
         if (type != inferred_type)
+#ifdef __riscv
+            std::terminate();
+#else
             throw std::invalid_argument("wrong transaction type: " + std::to_string(type) +
                                         ", expected: " + std::to_string(inferred_type));
+#endif
     }
 
     o.nonce = from_json<uint64_t>(j.at("nonce"));
@@ -497,17 +521,29 @@ void validate_state(const TestState& state, evmc_revision rev)
     for (const auto& [addr, acc] : state)
     {
         if (state::is_precompile(rev, addr) && !acc.code.empty())
+#ifdef __riscv
+            std::terminate();
+#else
             throw std::invalid_argument("unexpected code at precompile address " + hex0x(addr));
+#endif
 
         // Simplified: Skip EOF validation for now (would need <evmone/eof.hpp>)
         const bool allowedEF = // exceptions to EIP-3541 rule existing on Mainnet
             acc.code == "EF"_hex || acc.code == "EFF09f918bf09f9fa9"_hex;
         if (rev >= EVMC_LONDON && !allowedEF && !acc.code.empty() && acc.code[0] == 0xEF)
+#ifdef __riscv
+            std::terminate();
+#else
             throw std::invalid_argument("unexpected code starting with 0xEF at " + hex0x(addr));
+#endif
 
         if (rev >= EVMC_PARIS && acc.code.empty() && acc.balance == 0 && acc.nonce == 0 &&
             !acc.storage.empty())
+#ifdef __riscv
+            std::terminate();
+#else
             throw std::invalid_argument("empty account with non-empty storage at " + hex0x(addr));
+#endif
 
         // Note: Skipping EIP-7702 delegation and EOF container validation
 
@@ -515,9 +551,13 @@ void validate_state(const TestState& state, evmc_revision rev)
         {
             if (is_zero(value))
             {
+#ifdef __riscv
+                std::terminate();
+#else
                 throw std::invalid_argument{"account " + hex0x(addr) +
                                             " contains invalid zero-value storage entry " +
                                             hex0x(key)};
+#endif
             }
         }
     }

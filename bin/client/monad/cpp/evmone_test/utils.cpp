@@ -39,7 +39,11 @@ evmc_revision to_rev(std::string_view s)
         return EVMC_PRAGUE;
     if (s == "Osaka")
         return EVMC_OSAKA;
+#ifdef __riscv
+    std::terminate();
+#else
     throw std::invalid_argument{"unknown revision: " + std::string{s}};
+#endif
 }
 
 RevisionSchedule to_rev_schedule(std::string_view s)

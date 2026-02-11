@@ -80,7 +80,7 @@ namespace evmone::state
 
         return rlp::encode_tuple(receipt.post_state.value(),
             static_cast<uint64_t>(receipt.cumulative_gas_used),
-            //TODO bytes_view(receipt.logs_bloom_filter), 
+            bytes_view(receipt.logs_bloom_filter), 
             receipt.logs);
     }
     else
@@ -91,7 +91,7 @@ namespace evmone::state
 
         return prefix + rlp::encode_tuple(receipt.status == EVMC_SUCCESS,
                             static_cast<uint64_t>(receipt.cumulative_gas_used),
-                            //TODO bytes_view(receipt.logs_bloom_filter), 
+                            bytes_view(receipt.logs_bloom_filter), 
                             receipt.logs);
     }
 }

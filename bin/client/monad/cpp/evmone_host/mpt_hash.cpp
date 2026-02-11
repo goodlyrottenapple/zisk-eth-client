@@ -13,7 +13,7 @@ namespace evmone::state
 {
 namespace
 {
-hash256 mpt_hash(const std::map<bytes32, bytes32>& storage)
+hash256 mpt_hash(const ankerl::unordered_dense::map<bytes32, bytes32>& storage)
 {
     MPT trie;
     for (const auto& [key, value] : storage)

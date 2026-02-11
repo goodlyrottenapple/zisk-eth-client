@@ -7,7 +7,6 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <ankerl/unordered_dense.h>
-#include <map>
 #include <span>
 #include <variant>
 
@@ -36,7 +35,7 @@ struct TestAccount
 {
     uint64_t nonce = 0;
     uint256 balance;
-    std::map<bytes32, bytes32> storage;
+    ankerl::unordered_dense::map<bytes32, bytes32> storage;
     bytes code;
 
     bool operator==(const TestAccount&) const noexcept = default;
@@ -47,10 +46,10 @@ struct TestAccount
 /// This is a simplified variant of state::State:
 /// it hides some details related to transaction execution (e.g. original storage values)
 /// and is also easier to work with in tests.
-class TestState : public state::StateView, public std::map<address, TestAccount>
+class TestState : public state::StateView, public ankerl::unordered_dense::map<address, TestAccount>
 {
 public:
-    using map::map;
+    using ankerl::unordered_dense::map<address, TestAccount>::map;
 
     std::optional<Account> get_account(const address& addr) const noexcept override;
     bytes get_account_code(const address& addr) const noexcept override;
@@ -59,14 +58,14 @@ public:
     /// Inserts new account to the state.
     ///
     /// This method is for compatibility with state::State::insert().
-    /// Don't use it in new tests, use std::map interface instead.
+    /// Don't use it in new tests, use map interface instead.
     /// TODO: deprecate this method.
     void insert(const address& addr, TestAccount&& acc) { (*this)[addr] = std::move(acc); }
 
     /// Gets the reference to an existing account.
     ///
     /// This method is for compatibility with state::State::get().
-    /// Don't use it in new tests, use std::map interface instead.
+    /// Don't use it in new tests, use map interface instead.
     /// TODO: deprecate this method.
     TestAccount& get(const address& addr) { return (*this)[addr]; }
 

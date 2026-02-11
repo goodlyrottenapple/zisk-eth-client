@@ -6,7 +6,7 @@ mod ffi;
 use ziskos::{read_input_slice, set_output};
 
 fn main() {
-    println!("Monad EVM Client - Starting execution");
+    println!("Monad EVM Client - Blockchain Test Execution");
 
     // Read input from ziskos
     let input = read_input_slice();
@@ -16,6 +16,20 @@ fn main() {
         return;
     }
 
+    println!("Test data size: {} bytes", input.len());
+
+    // Execute blockchain test (input should be JSON test data)
+    let passed = ffi::execute_blockchain_test_safe(&input);
+
+    if passed {
+        println!("✓ Test passed");
+        set_output(0, 1); // Output 1 for success
+    } else {
+        println!("✗ Test failed");
+        set_output(0, 0); // Output 0 for failure
+    }
+
+    /* OLD CODE - for bytecode execution
     // Deserialize the bytecode from the input using bincode
     let bytecode: Vec<u8> = match bincode::deserialize(&input) {
         Ok(bytecode) => bytecode,
@@ -55,4 +69,5 @@ fn main() {
             println!("Execution failed: {}", e);
         }
     }
+    */
 }

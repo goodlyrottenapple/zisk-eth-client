@@ -16,9 +16,6 @@ fn main() {
 
     println!("cargo:warning=Building for target: {} using make target: {}", target, make_target);
 
-    // Run make clean first
-    run_make(&["clean"], cpp_dir);
-
     // Run make with the appropriate target
     run_make(&[make_target], cpp_dir);
 

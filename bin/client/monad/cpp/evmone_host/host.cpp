@@ -413,20 +413,22 @@ evmc::Result Host::execute_message(const evmc_message& msg) noexcept
     // Calls to precompile address via EIP-7702 delegation execute empty code instead of precompile.
     //TODO if ((msg.flags & EVMC_DELEGATED) == 0 && is_precompile(m_rev, msg.code_address))
         // return call_precompile(m_rev, msg);
-    if (auto maybe_result =
-            monad::check_call_eth_precompile<monad::EvmTraits<EVMC_CANCUN>>(msg);
-        maybe_result.has_value()) {
-        return std::move(maybe_result.value());
-    }
-    else {
+    
+    if ((msg.flags & EVMC_DELEGATED) == 0)
+        if (auto maybe_result =
+                monad::check_call_eth_precompile<monad::EvmTraits<EVMC_CANCUN>>(msg);
+            maybe_result.has_value()) {
+            return std::move(maybe_result.value());
+        }
 
-        // TODO: get_code() performs the account lookup. Add a way to get an account with code?
-        const auto code = m_state.get_code(msg.code_address);
-        if (code.empty())
-            return evmc::Result{EVMC_SUCCESS, msg.gas};  // Skip trivial execution.
 
-        return m_vm.execute(*this, m_rev, msg, code.data(), code.size());
-    }
+    // TODO: get_code() performs the account lookup. Add a way to get an account with code?
+    const auto code = m_state.get_code(msg.code_address);
+    if (code.empty())
+        return evmc::Result{EVMC_SUCCESS, msg.gas};  // Skip trivial execution.
+
+    return m_vm.execute(*this, m_rev, msg, code.data(), code.size());
+
 }
 
 evmc::Result Host::call(const evmc_message& orig_msg) noexcept

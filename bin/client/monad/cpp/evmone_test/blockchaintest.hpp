@@ -7,6 +7,7 @@
 #include "../evmone_host/bloom_filter.hpp"
 #include "../evmone_host/test_state.hpp"
 #include "../evmone_host/transaction.hpp"
+#include "../evmone_host/requests.hpp"
 #include "utils.hpp"
 #include <evmc/evmc.hpp>
 #include <span>
@@ -71,10 +72,39 @@ struct BlockchainTest
     Expectation expectation;
 };
 
+struct RejectedTransaction
+{
+    hash256 hash;
+    size_t index;
+    std::string message;
+};
+
+struct TransitionResult
+{
+    std::vector<state::TransactionReceipt> receipts;
+    std::vector<RejectedTransaction> rejected;
+    std::vector<state::Requests> requests;
+    int64_t gas_used;
+    state::BloomFilter bloom;
+    int64_t blob_gas_left;
+    TestState block_state;
+};
+
+// Test loading
 std::vector<BlockchainTest> load_blockchain_tests(std::istream& input);
 
-void run_blockchain_tests(std::span<const BlockchainTest> tests, evmc::VM& vm);
+// Test execution helpers
+TransitionResult apply_block(TestState& state, evmc::VM& vm, const state::BlockInfo& block,
+    const state::BlockHashes& block_hashes, const std::vector<state::Transaction>& txs,
+    evmc_revision rev, std::optional<int64_t> block_reward);
 
+bool validate_block(evmc_revision rev, const TestBlock& test_block,
+    const BlockHeader& parent_header) noexcept;
+
+std::optional<int64_t> mining_reward(evmc_revision rev) noexcept;
+
+// Legacy test runner (not used in wrapper)
+void run_blockchain_tests(std::span<const BlockchainTest> tests, evmc::VM& vm);
 void blockchain_test_setup(int* argc, char** argv);
 int blockchain_test_main(std::vector<std::string> const& paths, bool trace_flag, evmc::VM& vm);
 

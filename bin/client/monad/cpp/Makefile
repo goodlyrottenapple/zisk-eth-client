@@ -6,7 +6,7 @@ CC_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-gcc
 AR_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-ar
 
 # Compiler flags
-CXXFLAGS_COMMON = -std=c++23 -O3 -Ithird_party/evmc/include -Ithird_party/intx/include -Ithird_party/ethash/include -Ithird_party/unordered_dense/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/libff -Ithird_party/silkpre/third_party/secp256k1/include -Ithird_party/blst/bindings
+CXXFLAGS_COMMON = -std=c++23 -O3 -Ithird_party -Ithird_party/evmc/include -Ithird_party/intx/include -Ithird_party/ethash/include -Ithird_party/unordered_dense/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/libff -Ithird_party/silkpre/third_party/secp256k1/include -Ithird_party/blst/bindings
 CXXFLAGS_X86 = $(CXXFLAGS_COMMON) -fPIC
 CXXFLAGS_RISCV = $(CXXFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DGMP_NUMB_BITS=64
 

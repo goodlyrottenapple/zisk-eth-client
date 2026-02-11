@@ -2,32 +2,13 @@
 // Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-// #include "precompiles.hpp"
-// #include "precompiles_internal.hpp"
-// #include "precompiles_stubs.hpp"
-// #include <evmone_precompiles/blake2b.hpp>
-// #include <evmone_precompiles/bls.hpp>
-// #include <evmone_precompiles/bn254.hpp>
-// #include <evmone_precompiles/kzg.hpp>
-// #include <evmone_precompiles/ripemd160.hpp>
-// #include <evmone_precompiles/secp256k1.hpp>
-// #include <evmone_precompiles/sha256.hpp>
-// #include <intx/intx.hpp>
-// #include <array>
-// #include <bit>
-// #include <cassert>
-// #include <limits>
-// #include <span>
+#include "precompiles.hpp"
 
-// #ifdef EVMONE_PRECOMPILES_SILKPRE
-// #include "precompiles_silkpre.hpp"
-// #endif
-
-// namespace evmone::state
-// {
-// using evmc::bytes;
-// using evmc::bytes_view;
-// using namespace evmc::literals;
+namespace evmone::state
+{
+using evmc::bytes;
+using evmc::bytes_view;
+using namespace evmc::literals;
 
 // namespace
 // {
@@ -595,31 +576,31 @@
 // }};
 // }  // namespace
 
-// bool is_precompile(evmc_revision rev, const evmc::address& addr) noexcept
-// {
-//     // Define compile-time constant,
-//     // TODO(clang18): workaround for Clang Analyzer bug, fixed in clang 18.
-//     //                https://github.com/llvm/llvm-project/issues/59493.
-//     static constexpr evmc::address address_boundary{stdx::to_underlying(PrecompileId::latest)};
+bool is_precompile(evmc_revision rev, const evmc::address& addr) noexcept
+{
+    // Define compile-time constant,
+    // TODO(clang18): workaround for Clang Analyzer bug, fixed in clang 18.
+    //                https://github.com/llvm/llvm-project/issues/59493.
+    static constexpr evmc::address address_boundary{stdx::to_underlying(PrecompileId::latest)};
 
-//     if (evmc::is_zero(addr) || addr > address_boundary)
-//         return false;
+    if (evmc::is_zero(addr) || addr > address_boundary)
+        return false;
 
-//     const auto id = addr.bytes[19];
-//     if (rev < EVMC_BYZANTIUM && id >= stdx::to_underlying(PrecompileId::since_byzantium))
-//         return false;
+    const auto id = addr.bytes[19];
+    if (rev < EVMC_BYZANTIUM && id >= stdx::to_underlying(PrecompileId::since_byzantium))
+        return false;
 
-//     if (rev < EVMC_ISTANBUL && id >= stdx::to_underlying(PrecompileId::since_istanbul))
-//         return false;
+    if (rev < EVMC_ISTANBUL && id >= stdx::to_underlying(PrecompileId::since_istanbul))
+        return false;
 
-//     if (rev < EVMC_CANCUN && id >= stdx::to_underlying(PrecompileId::since_cancun))
-//         return false;
+    if (rev < EVMC_CANCUN && id >= stdx::to_underlying(PrecompileId::since_cancun))
+        return false;
 
-//     if (rev < EVMC_PRAGUE && id >= stdx::to_underlying(PrecompileId::since_prague))
-//         return false;
+    if (rev < EVMC_PRAGUE && id >= stdx::to_underlying(PrecompileId::since_prague))
+        return false;
 
-//     return true;
-// }
+    return true;
+}
 
 // evmc::Result call_precompile(evmc_revision rev, const evmc_message& msg) noexcept
 // {
@@ -644,4 +625,4 @@
 //         [](const evmc_result* res) noexcept { std::free(const_cast<uint8_t*>(res->output_data)); }};
 //     return evmc::Result{result};
 // }
-// }  // namespace evmone::state
+}  // namespace evmone::state

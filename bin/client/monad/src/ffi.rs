@@ -28,6 +28,11 @@ extern "C" {
     ) -> *mut EvmcResult;
 
     pub fn free_result(result: *mut EvmcResult);
+
+    pub fn execute_blockchain_test(
+        test_data: *const u8,
+        test_data_len: u32,
+    ) -> bool;
 }
 
 pub struct ExecutionResult {
@@ -97,5 +102,12 @@ pub fn execute_bytecode(bytecode: &[u8], gas_limit: i64) -> Result<ExecutionResu
         free_result(result_ptr);
 
         Ok(execution_result)
+    }
+}
+
+/// Safe wrapper for blockchain test execution
+pub fn execute_blockchain_test_safe(test_data: &[u8]) -> bool {
+    unsafe {
+        execute_blockchain_test(test_data.as_ptr(), test_data.len() as u32)
     }
 }

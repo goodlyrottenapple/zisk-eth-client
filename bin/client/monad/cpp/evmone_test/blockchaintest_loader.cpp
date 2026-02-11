@@ -142,8 +142,12 @@ BlockchainTest load_blockchain_test_case(const std::string& name, const json::js
             // TODO: Add support for invalidly rlp-encoded blocks, which do
             // not have `rlp_decoded`.
             if (!el.contains("rlp_decoded"))
+#ifdef __riscv
+                std::terminate();  // Crash on unsupported test features in RISC-V
+#else
                 throw UnsupportedTestFeature(
                     "tests with invalidly rlp-encoded blocks are not supported");
+#endif
 
             auto test_block = load_test_block(el.at("rlp_decoded"), bt.rev);
             test_block.valid = false;

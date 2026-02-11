@@ -123,6 +123,18 @@ int fprintf(void* stream, const char* format, ...) {
     return 0;
 }
 
+// Stub printf - we don't support stdio in zkVM
+int printf(const char* format, ...) {
+    (void)format;
+    return 0;
+}
+
+// Stub puts - we don't support stdio in zkVM
+int puts(const char* s) {
+    (void)s;
+    return 0;
+}
+
 // Stub __assert_func - assertions will just abort in zkVM
 void __assert_func(const char* file, int line, const char* func, const char* failedexpr) {
     (void)file;
