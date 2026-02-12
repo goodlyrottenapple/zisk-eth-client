@@ -135,6 +135,14 @@ int puts(const char* s) {
     return 0;
 }
 
+// Stub fwrite - referenced by intx::to_string via snprintf internals
+size_t fwrite(const void* ptr, size_t size, size_t count, void* stream) {
+    (void)ptr;
+    (void)size;
+    (void)stream;
+    return count;
+}
+
 // Stub __assert_func - assertions will just abort in zkVM
 void __assert_func(const char* file, int line, const char* func, const char* failedexpr) {
     (void)file;

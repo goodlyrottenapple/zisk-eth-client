@@ -67,7 +67,7 @@ class State
     const StateView& m_initial;
 
     /// The accounts loaded from the initial state and potentially modified.
-    ankerl::unordered_dense::map<address, Account> m_modified;
+    ankerl::unordered_dense::segmented_map<address, Account> m_modified;
 
     /// The state journal: the list of changes made to the state
     /// with information how to revert them.

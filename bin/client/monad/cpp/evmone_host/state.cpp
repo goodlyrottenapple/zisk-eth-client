@@ -630,8 +630,7 @@ TransactionReceipt transition(const StateView& state_view, const BlockInfo& bloc
     // EIP-7623: The gas used by the transaction must be at least the min_gas_cost.
     gas_used = std::max(gas_used, tx_props.min_gas_cost);
 
-    auto &sender_acc2 = state.get(tx.sender);
-    sender_acc2.balance += tx_max_cost - gas_used * effective_gas_price;
+    sender_acc.balance += tx_max_cost - gas_used * effective_gas_price;
     state.touch(block.coinbase).balance += gas_used * priority_gas_price;
 
     // Cumulative gas used is unknown in this scope.

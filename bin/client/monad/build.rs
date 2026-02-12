@@ -32,6 +32,9 @@ fn main() {
     // and use newlib sources from cpp/libc_riscv/
     if make_target == "riscv" {
         // No libgcc linking for RISC-V
+        // Force 8-byte alignment for .srodata.cst4 sections (ZisK VM requires it)
+        let align_ld = env::current_dir().unwrap().join("align.ld");
+        println!("cargo:rustc-link-arg=-T{}", align_ld.display());
     } else {
         // For x86, link C++ standard library
         println!("cargo:rustc-link-lib=stdc++");

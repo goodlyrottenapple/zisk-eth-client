@@ -35,7 +35,7 @@ struct TestAccount
 {
     uint64_t nonce = 0;
     uint256 balance;
-    ankerl::unordered_dense::map<bytes32, bytes32> storage;
+    ankerl::unordered_dense::segmented_map<bytes32, bytes32> storage;
     bytes code;
 
     bool operator==(const TestAccount&) const noexcept = default;
@@ -46,10 +46,10 @@ struct TestAccount
 /// This is a simplified variant of state::State:
 /// it hides some details related to transaction execution (e.g. original storage values)
 /// and is also easier to work with in tests.
-class TestState : public state::StateView, public ankerl::unordered_dense::map<address, TestAccount>
+class TestState : public state::StateView, public ankerl::unordered_dense::segmented_map<address, TestAccount>
 {
 public:
-    using ankerl::unordered_dense::map<address, TestAccount>::map;
+    using ankerl::unordered_dense::segmented_map<address, TestAccount>::segmented_map;
 
     std::optional<Account> get_account(const address& addr) const noexcept override;
     bytes get_account_code(const address& addr) const noexcept override;
@@ -73,10 +73,10 @@ public:
     void apply(const state::StateDiff& diff);
 };
 
-class TestBlockHashes : public state::BlockHashes, public ankerl::unordered_dense::map<int64_t, bytes32>
+class TestBlockHashes : public state::BlockHashes, public ankerl::unordered_dense::segmented_map<int64_t, bytes32>
 {
 public:
-    using ankerl::unordered_dense::map<int64_t, bytes32>::map;
+    using ankerl::unordered_dense::segmented_map<int64_t, bytes32>::segmented_map;
 
     bytes32 get_block_hash(int64_t block_number) const noexcept override;
 };

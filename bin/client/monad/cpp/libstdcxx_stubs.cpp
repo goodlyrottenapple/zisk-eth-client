@@ -4,6 +4,8 @@
 #if defined(__riscv)
 
 #include <cstddef>
+#include <system_error>
+#include <stdexcept>
 
 extern "C" {
     void abort();  // Provided by syscalls_stubs.cpp
@@ -39,6 +41,41 @@ extern "C" {
         // Initialization failed, reset guard
         *guard = 0;
     }
+}
+
+// __cow_string stubs (used by error_category::_M_message)
+namespace std {
+    __cow_string::__cow_string() { _M_p = ""; }
+    __cow_string::__cow_string(const std::string&) { _M_p = ""; }
+    __cow_string::__cow_string(const char*, size_t) { _M_p = ""; }
+    __cow_string::__cow_string(const __cow_string&) noexcept { _M_p = ""; }
+    __cow_string& __cow_string::operator=(const __cow_string&) noexcept { return *this; }
+    __cow_string::~__cow_string() {}
+    __cow_string::__cow_string(__cow_string&&) noexcept { _M_p = ""; }
+    __cow_string& __cow_string::operator=(__cow_string&&) noexcept { return *this; }
+}
+
+// std::error_category base class virtual function stubs
+namespace std {
+inline namespace _V2 {
+    error_category::~error_category() {}
+
+    __cow_string error_category::_M_message(int) const {
+        return __cow_string();
+    }
+
+    error_condition error_category::default_error_condition(int ev) const noexcept {
+        return error_condition(ev, *this);
+    }
+
+    bool error_category::equivalent(int code, const error_condition& condition) const noexcept {
+        return default_error_condition(code) == condition;
+    }
+
+    bool error_category::equivalent(const error_code& code, int condition) const noexcept {
+        return *this == code.category() && code.value() == condition;
+    }
+} // inline namespace _V2
 }
 
 // C++ standard library stubs

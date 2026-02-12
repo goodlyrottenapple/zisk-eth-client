@@ -32,11 +32,19 @@ enum ErrorCode : int
     UNKNOWN_ERROR,
 };
 
+
 /// Obtains a reference to the static error category object for evmone errors.
 inline const std::error_category& evmone_category() noexcept
 {
+
     struct Category : std::error_category
     {
+#if defined(__riscv)
+        [[nodiscard]] const char* name() const noexcept final { return ""; }
+
+        [[nodiscard]] std::string message(int) const noexcept final { return ""; }
+
+#else
         [[nodiscard]] const char* name() const noexcept final { return "evmone"; }
 
         [[nodiscard]] std::string message(int ev) const noexcept final
@@ -86,6 +94,7 @@ inline const std::error_category& evmone_category() noexcept
                 return "Wrong error code";
             }
         }
+#endif
     };
 
     static const Category category_instance;
