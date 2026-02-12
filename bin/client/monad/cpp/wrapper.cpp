@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <cstring>
 #include <span>
-#include <sstream>
 #include "evm/opcodes.hpp"
 #include "runtime/types.hpp"
 #include "runtime/allocator.hpp"
@@ -16,6 +15,7 @@
 #include "evmone_host/transaction.hpp"
 #include "evmone_host/mpt_hash.hpp"
 #include "evmone_test/blockchaintest.hpp"
+#include "converter/binary_format.hpp"
 
 namespace monad::vm::runtime
 {
@@ -117,7 +117,7 @@ void free_result(evmc_result* result) {
 
 // Execute a blockchain test
 // Parameters:
-//   test_data: JSON test data
+//   test_data: Binary test data (produced by ethtest_converter)
 //   test_data_len: Length of test data
 // Returns: true if test passes, false if test fails
 bool execute_blockchain_test(
@@ -130,14 +130,8 @@ bool execute_blockchain_test(
     init_evm_vm();
     printf("VM initialized\n");
 
-    // Convert byte buffer to string for JSON parsing
-    std::string json_str(reinterpret_cast<const char*>(test_data), test_data_len);
-    printf("JSON string created, length: %u\n", test_data_len);
-
-    // Parse JSON to BlockchainTest
-    // Note: load_blockchain_tests requires an istream
-    std::istringstream input(json_str);
-    auto tests = evmone::test::load_blockchain_tests(input);
+    // Deserialize binary format
+    auto tests = binary_format::deserialize_blockchain_tests(test_data, test_data_len);
     printf("Tests loaded: %zu tests\n", tests.size());
 
     if (tests.empty()) {

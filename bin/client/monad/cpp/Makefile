@@ -23,9 +23,14 @@ ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
 # Note: libff_stubs.cpp provides stub implementations for libff profiling functions
 SOURCES_COMMON = $(wildcard *.cpp) $(wildcard runtime/*.cpp) $(wildcard interpreter/*.cpp) $(wildcard core/*.cpp) $(wildcard evm/*.cpp) $(wildcard evmone_host/*.cpp) $(wildcard execution/ethereum/*.cpp) $(wildcard evmone_test/*.cpp)
 
-# Both x86 and RISC-V use the same sources, except RISC-V excludes BLST-dependent files
+# JSON-dependent sources (only needed for x86 converter, not for RISC-V runtime)
+JSON_SOURCES = evmone_test/blockchaintest_loader.cpp evmone_test/statetest_loader.cpp evmone_test/utils.cpp
+
+# x86: all common sources (converter/ is in a separate directory, not matched by wildcards)
 SOURCES_X86 = $(SOURCES_COMMON)
-SOURCES_RISCV = $(filter-out execution/ethereum/precompiles_bls12.cpp,$(SOURCES_COMMON))
+
+# RISC-V: exclude JSON loaders and BLST
+SOURCES_RISCV = $(filter-out $(JSON_SOURCES) execution/ethereum/precompiles_bls12.cpp,$(SOURCES_COMMON))
 
 ASM_SOURCES_X86 = runtime/math.S interpreter/entry.S runtime/exit.S
 
@@ -282,10 +287,23 @@ build/riscv/gmp_mini_compat.o: gmp_mini_compat.c
 	@mkdir -p $(dir $@)
 	$(CC_RISCV) $(CFLAGS_RISCV) -c $< -o $@
 
+# Converter binary (x86 only) - converts JSON blockchain tests to binary format
+CONVERTER_BIN = build/x86/ethtest_converter
+
+converter: apply-patches $(CONVERTER_BIN)
+
+$(CONVERTER_BIN): build/x86/converter/converter_main.o $(OBJECTS_X86)
+	@mkdir -p build/x86
+	$(CXX_X86) -o $@ $^ -lstdc++ -lgmp -lgmpxx
+
+build/x86/converter/converter_main.o: converter/converter_main.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_X86) $(CXXFLAGS_X86) -Iconverter -c $< -o $@
+
 # Clean build artifacts
 clean:
 	rm -rf build
 	rm -f third_party/ethash/.patches_applied
 	@cd third_party/ethash && git checkout -f lib/keccak/keccak.c 2>/dev/null || true
 
-.PHONY: all x86 riscv clean apply-patches
+.PHONY: all x86 riscv converter clean apply-patches
