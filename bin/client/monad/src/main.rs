@@ -8,7 +8,7 @@ use ziskos::{read_input_slice, set_output};
 fn main() {
     println!("Monad EVM Client - Blockchain Test Execution");
 
-    // Read input from ziskos
+    // Read binary test data from ziskos input
     let input = read_input_slice();
 
     if input.is_empty() {
@@ -18,56 +18,14 @@ fn main() {
 
     println!("Test data size: {} bytes", input.len());
 
-    // Execute blockchain test (input should be JSON test data)
+    // Execute blockchain test (input is binary format produced by ethtest_converter)
     let passed = ffi::execute_blockchain_test_safe(&input);
 
     if passed {
         println!("✓ Test passed");
-        set_output(0, 1); // Output 1 for success
+        set_output(0, 1);
     } else {
         println!("✗ Test failed");
-        set_output(0, 0); // Output 0 for failure
+        set_output(0, 0);
     }
-
-    /* OLD CODE - for bytecode execution
-    // Deserialize the bytecode from the input using bincode
-    let bytecode: Vec<u8> = match bincode::deserialize(&input) {
-        Ok(bytecode) => bytecode,
-        Err(e) => {
-            println!("Failed to deserialize bytecode from input: {}", e);
-            return;
-        }
-    };
-
-    println!("Executing bytecode of length: {} bytes", bytecode.len());
-
-    // Execute the bytecode using the Monad interpreter
-    let gas_limit = 10_000_000; // 10 million gas
-    match ffi::execute_bytecode(&bytecode, gas_limit) {
-        Ok(result) => {
-            println!("Execution completed");
-            println!("Status: {} ({})", result.status_code, result.status_str());
-            println!("Gas left: {}", result.gas_left);
-            println!("Gas refund: {}", result.gas_refund);
-            println!("Output length: {} bytes", result.output.len());
-
-            if !result.output.is_empty() {
-                // Print output data as hex
-                println!("Output data (hex): {}", hex::encode(&result.output));
-
-                // Write output to ziskos public output
-                // We'll write the output in chunks of 4 bytes as u32 values
-                for (index, chunk) in result.output.chunks(4).enumerate() {
-                    let mut bytes = [0u8; 4];
-                    bytes[..chunk.len()].copy_from_slice(chunk);
-                    let value = u32::from_le_bytes(bytes);
-                    set_output(index, value);
-                }
-            }
-        }
-        Err(e) => {
-            println!("Execution failed: {}", e);
-        }
-    }
-    */
 }
