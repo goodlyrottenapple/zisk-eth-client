@@ -3,13 +3,36 @@ ziskos::entrypoint!(main);
 
 mod ffi;
 
-use ziskos::{read_input_slice, set_output};
+use ziskos::set_output;
+
+/// Read input: on x86 from CLI arg (`-i <file>`), on RISC-V from ziskos memory-mapped input.
+fn read_input() -> Vec<u8> {
+    #[cfg(all(target_os = "zkvm", target_vendor = "zisk"))]
+    {
+        ziskos::read_input_slice().to_vec()
+    }
+
+    #[cfg(not(all(target_os = "zkvm", target_vendor = "zisk")))]
+    {
+        let args: Vec<String> = std::env::args().collect();
+        let path = match args.iter().position(|a| a == "-i") {
+            Some(i) if i + 1 < args.len() => args[i + 1].clone(),
+            _ => {
+                eprintln!("Usage: {} -i <input.bin>", args.first().map_or("zec-monad", |s| s.as_str()));
+                std::process::exit(1);
+            }
+        };
+        std::fs::read(&path).unwrap_or_else(|e| {
+            eprintln!("Error reading {}: {}", path, e);
+            std::process::exit(1);
+        })
+    }
+}
 
 fn main() {
     println!("Monad EVM Client - Blockchain Test Execution");
 
-    // Read binary test data from ziskos input
-    let input = read_input_slice();
+    let input = read_input();
 
     if input.is_empty() {
         println!("Error: No input provided");
