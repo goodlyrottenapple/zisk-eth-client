@@ -1,0 +1,6 @@
+[workspace]
+members = ["program", "script"]
+resolver = "2"
+
+# Note: The Monad interpreter is GPL-licensed
+# Users must comply with GPL v3 requirements when using this client

@@ -1,15 +1,25 @@
 --- lib/keccak/keccak.c
 +++ lib/keccak/keccak.c
-@@ -273,12 +273,22 @@
+@@ -273,12 +273,32 @@
      keccakf1600_implementation(state);
  }
- 
-+// Zisk hardware-accelerated keccak-f[1600] implementation
-+#if defined(__riscv)
+
++// Hardware-accelerated keccak-f[1600] for zkVM targets
++#if defined(SP1_TARGET)
++// SP1 KECCAK_PERMUTE syscall (code 0x00010109)
++static void sp1_keccak_permute(uint64_t state[25])
++{
++    register unsigned int t0 __asm__("t0") = 0x00010109;
++    register void* a0 __asm__("a0") = (void*)state;
++    register void* a1 __asm__("a1") = (void*)0;
++    __asm__ volatile("ecall" : "+r"(t0) : "r"(a0), "r"(a1) : "memory");
++}
++
++static void (*keccakf1600_best)(uint64_t[25]) = sp1_keccak_permute;
++#elif defined(__riscv)
++// Zisk keccak syscall
 +extern void syscall_keccak_f(uint64_t state[25]);
 +
-+/// The pointer to the best Keccak-f[1600] function implementation,
-+/// For zisk target, use syscall
 +static void (*keccakf1600_best)(uint64_t[25]) = syscall_keccak_f;
 +#else
  /// The pointer to the best Keccak-f[1600] function implementation,
@@ -19,7 +29,7 @@
  
  
 -#if !defined(_MSC_VER) && defined(__x86_64__) && __has_attribute(target)
-+// x86 BMI optimization (not used on zisk/RISC-V)
++// x86 BMI optimization (not used on zkVM/RISC-V)
 +#if !defined(__riscv) && !defined(_MSC_VER) && defined(__x86_64__) && __has_attribute(target)
  __attribute__((target("bmi,bmi2"))) static void keccakf1600_bmi(uint64_t state[25])
  {

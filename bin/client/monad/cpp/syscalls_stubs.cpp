@@ -1,5 +1,5 @@
 // Minimal syscall stubs and allocator for zkVM environment
-// Uses Zisk's built-in sys_alloc_aligned instead of custom allocator
+// ZisK uses sys_alloc_aligned, SP1 uses Rust global allocator via FFI
 
 #if defined(__riscv)
 
@@ -10,15 +10,27 @@
 
 extern "C" {
 
-// Import Zisk's memory allocator from ziskos
-// This is provided by the ziskos entrypoint library
+#if defined(SP1_TARGET)
+// SP1: allocator provided by sp1-zkvm Rust runtime via FFI
+extern void* sp1_alloc_aligned(size_t bytes, size_t align);
+#else
+// ZisK: allocator provided by ziskos entrypoint library
 extern void* sys_alloc_aligned(size_t bytes, size_t align);
+#endif
 
 void _exit(int status) {
-    // In zkVM (RISC-V), we use ecall with syscall number 93 to exit
+#if defined(SP1_TARGET)
+    // SP1: HALT syscall (code 0x00000000) via ecall
+    register int t0 asm("t0") = 0;
+    register int a0 asm("a0") = status;
+    register int a1 asm("a1") = 0;
+    asm volatile("ecall" : : "r"(t0), "r"(a0), "r"(a1));
+#else
+    // ZisK: ecall with syscall number 93
     int a0 asm("a0") = status;
     int a7 asm("a7") = 93;
     asm volatile("ecall" : : "r"(a0), "r"(a7));
+#endif
 
     // Should never reach here
     __builtin_unreachable();
@@ -62,13 +74,17 @@ int _getpid(void) {
     return 1;
 }
 
-// Provide malloc/free implementation using Zisk's sys_alloc_aligned
+// Provide malloc/free implementation using zkVM allocator
 void* malloc(size_t size) {
     if (size == 0) {
         return nullptr;
     }
     // Use 16-byte alignment for compatibility with intx and general use
+#if defined(SP1_TARGET)
+    return sp1_alloc_aligned(size, 16);
+#else
     return sys_alloc_aligned(size, 16);
+#endif
 }
 
 void free(void* ptr) {

@@ -4,6 +4,10 @@ CC_X86 = gcc-15
 CXX_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-g++
 CC_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-gcc
 AR_RISCV = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-ar
+# SP1 v6 uses rv64im — ZisK rv64ima toolchain works with -march=rv64im subset
+CXX_SP1 = $(CXX_RISCV)
+CC_SP1 = $(CC_RISCV)
+AR_SP1 = $(AR_RISCV)
 
 # Compiler flags
 CXXFLAGS_COMMON = -std=c++23 -O3 -Ithird_party -Ithird_party/evmc/include -Ithird_party/intx/include -Ithird_party/ethash/include -Ithird_party/unordered_dense/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/libff -Ithird_party/silkpre/third_party/secp256k1/include -Ithird_party/blst/bindings
@@ -15,9 +19,12 @@ CFLAGS_COMMON = -O3 -Ithird_party/ethash/include -Ithird_party/silkpre/lib -Ithi
 CFLAGS_X86 = $(CFLAGS_COMMON) -fPIC
 # RISC-V needs secp256k1 configuration flags
 CFLAGS_RISCV = $(CFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -ffunction-sections -fdata-sections -DUSE_NUM_NONE -DUSE_FIELD_INV_BUILTIN -DUSE_SCALAR_INV_BUILTIN -DUSE_FIELD_5X52 -DUSE_SCALAR_4X64 -DHAVE___INT128 -DECMULT_WINDOW_SIZE=15 -DECMULT_GEN_PREC_BITS=4 -DUSE_ENDOMORPHISM -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -DGMP_NUMB_BITS=64
+CXXFLAGS_SP1 = $(CXXFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=rv64im -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DSP1_TARGET -DGMP_NUMB_BITS=64
+CFLAGS_SP1 = $(CFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=rv64im -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -fno-exceptions -ffunction-sections -fdata-sections -DNDEBUG -DSP1_TARGET -DUSE_NUM_NONE -DUSE_FIELD_INV_BUILTIN -DUSE_SCALAR_INV_BUILTIN -DUSE_FIELD_5X52 -DUSE_SCALAR_4X64 -DHAVE___INT128 -DECMULT_WINDOW_SIZE=15 -DECMULT_GEN_PREC_BITS=4 -DUSE_ENDOMORPHISM -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -DGMP_NUMB_BITS=64
 
 # Assembly flags (for .S files in RISC-V build)
 ASFLAGS_RISCV = -march=rv64ima -mabi=lp64 -Ilibc_riscv
+ASFLAGS_SP1 = -march=rv64im -mabi=lp64 -Ilibc_riscv
 
 # Common source files for both targets
 # Note: libff_stubs.cpp provides stub implementations for libff profiling functions
@@ -100,9 +107,31 @@ OBJECTS_RISCV = $(patsubst %.cpp,build/riscv/%.o,$(SOURCES_RISCV)) \
                 $(MINI_GMP_OBJECTS_RISCV) \
                 $(GMP_COMPAT_OBJECTS_RISCV)
 
+# SP1 (rv32im): same exclusions as RISC-V (no JSON, no BLST)
+SOURCES_SP1 = $(filter-out $(JSON_SOURCES) execution/ethereum/precompiles_bls12.cpp,$(SOURCES_COMMON))
+LIBC_ASM_SOURCES_SP1 = $(wildcard libc_riscv/*.S)
+LIBC_OBJECTS_SP1 = $(patsubst libc_riscv/%.S,build/sp1/libc_riscv_%.o,$(LIBC_ASM_SOURCES_SP1))
+ETHASH_OBJECTS_SP1 = $(patsubst third_party/ethash/lib/%.cpp,build/sp1/ethash_%.o,$(ETHASH_CPP_SOURCES)) \
+                     $(patsubst third_party/ethash/lib/%.c,build/sp1/ethash_%.o,$(ETHASH_C_SOURCES))
+SILKPRE_OBJECTS_SP1 = $(patsubst third_party/silkpre/lib/%.cpp,build/sp1/silkpre_%.o,$(SILKPRE_CPP_SOURCES)) \
+                      $(patsubst third_party/silkpre/lib/%.c,build/sp1/silkpre_%.o,$(SILKPRE_C_SOURCES))
+LIBFF_OBJECTS_SP1 = $(patsubst third_party/silkpre/third_party/libff/libff/%.cpp,build/sp1/libff_%.o,$(LIBFF_CPP_SOURCES))
+SECP256K1_OBJECTS_SP1 = $(patsubst third_party/silkpre/third_party/secp256k1/src/%.c,build/sp1/secp256k1_%.o,$(SECP256K1_C_SOURCES))
+MINI_GMP_OBJECTS_SP1 = $(patsubst third_party/gmp/mini-gmp/%.c,build/sp1/mini_gmp_%.o,$(MINI_GMP_C_SOURCES))
+GMP_COMPAT_OBJECTS_SP1 = $(patsubst %.c,build/sp1/%.o,$(GMP_COMPAT_C_SOURCES))
+OBJECTS_SP1 = $(patsubst %.cpp,build/sp1/%.o,$(SOURCES_SP1)) \
+              $(LIBC_OBJECTS_SP1) \
+              $(ETHASH_OBJECTS_SP1) \
+              $(SILKPRE_OBJECTS_SP1) \
+              $(LIBFF_OBJECTS_SP1) \
+              $(SECP256K1_OBJECTS_SP1) \
+              $(MINI_GMP_OBJECTS_SP1) \
+              $(GMP_COMPAT_OBJECTS_SP1)
+
 # Library outputs
 LIB_X86 = build/x86/libmonad_wrapper.a
 LIB_RISCV = build/riscv/libmonad_wrapper.a
+LIB_SP1 = build/sp1/libmonad_wrapper.a
 
 # Patch marker file
 PATCH_MARKER = third_party/ethash/.patches_applied
@@ -287,6 +316,87 @@ build/riscv/gmp_mini_compat.o: gmp_mini_compat.c
 	@mkdir -p $(dir $@)
 	$(CC_RISCV) $(CFLAGS_RISCV) -c $< -o $@
 
+# SP1 target using riscv32-unknown-elf-g++ (32-bit RISC-V for Succinct SP1 zkVM)
+sp1: apply-patches $(LIB_SP1)
+
+$(LIB_SP1): $(OBJECTS_SP1)
+	@mkdir -p build/sp1
+	$(AR_SP1) rcs $(LIB_SP1) $(OBJECTS_SP1)
+
+build/sp1/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -c $< -o $@
+
+build/sp1/runtime/%.o: runtime/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -c $< -o $@
+
+build/sp1/interpreter/%.o: interpreter/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -c $< -o $@
+
+build/sp1/core/%.o: core/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -c $< -o $@
+
+build/sp1/evm/%.o: evm/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -c $< -o $@
+
+build/sp1/evmone_host/%.o: evmone_host/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -c $< -o $@
+
+build/sp1/execution/ethereum/%.o: execution/ethereum/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -c $< -o $@
+
+build/sp1/evmone_test/%.o: evmone_test/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -c $< -o $@
+
+build/sp1/libc_riscv_%.o: libc_riscv/%.S
+	@mkdir -p build/sp1
+	$(CC_SP1) $(ASFLAGS_SP1) -c $< -o $@
+
+# Ethash library compilation for SP1
+build/sp1/ethash_%.o: third_party/ethash/lib/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -c $< -o $@
+
+build/sp1/ethash_%.o: third_party/ethash/lib/%.c
+	@mkdir -p $(dir $@)
+	$(CC_SP1) $(CFLAGS_SP1) -c $< -o $@
+
+# Silkpre library compilation for SP1
+build/sp1/silkpre_%.o: third_party/silkpre/lib/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -c $< -o $@
+
+build/sp1/silkpre_%.o: third_party/silkpre/lib/%.c
+	@mkdir -p $(dir $@)
+	$(CC_SP1) $(CFLAGS_SP1) -c $< -o $@
+
+# Libff library compilation for SP1
+build/sp1/libff_%.o: third_party/silkpre/third_party/libff/libff/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX_SP1) $(CXXFLAGS_SP1) -DNO_PROCPS=1 -DCURVE_BN128 -DBN_SUPPORT_SNARK=1 -c $< -o $@
+
+# Secp256k1 library compilation for SP1
+build/sp1/secp256k1_%.o: third_party/silkpre/third_party/secp256k1/src/%.c
+	@mkdir -p $(dir $@)
+	$(CC_SP1) $(CFLAGS_SP1) -DECMULT_GEN_PREC_BITS=4 -DECMULT_WINDOW_SIZE=15 -c $< -o $@
+
+# Mini-GMP library compilation for SP1
+build/sp1/mini_gmp_%.o: third_party/gmp/mini-gmp/%.c
+	@mkdir -p $(dir $@)
+	$(CC_SP1) $(CFLAGS_SP1) -c $< -o $@
+
+# GMP compatibility layer compilation for SP1
+build/sp1/gmp_mini_compat.o: gmp_mini_compat.c
+	@mkdir -p $(dir $@)
+	$(CC_SP1) $(CFLAGS_SP1) -c $< -o $@
+
 # Converter binary (x86 only) - converts JSON blockchain tests to binary format
 CONVERTER_BIN = build/x86/ethtest_converter
 
@@ -306,4 +416,4 @@ clean:
 	rm -f third_party/ethash/.patches_applied
 	@cd third_party/ethash && git checkout -f lib/keccak/keccak.c 2>/dev/null || true
 
-.PHONY: all x86 riscv converter clean apply-patches
+.PHONY: all x86 riscv sp1 converter clean apply-patches

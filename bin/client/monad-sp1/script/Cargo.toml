@@ -1,0 +1,12 @@
+[package]
+name = "monad-sp1-script"
+description = "Monad EVM Client host/prover for SP1"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sp1-sdk = { version = "6.0.0", features = ["blocking"] }
+clap = { version = "4", features = ["derive"] }
+
+[build-dependencies]
+sp1-build = "6.0.0"

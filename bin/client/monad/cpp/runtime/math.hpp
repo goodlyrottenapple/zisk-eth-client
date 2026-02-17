@@ -35,8 +35,8 @@ extern "C" void monad_vm_runtime_mul(
     monad::vm::runtime::uint256_t const *left,
     monad::vm::runtime::uint256_t const *right) noexcept;
 
-// RISC-V zisk syscall declarations
-#if defined(__riscv)
+// ZisK syscall declarations (64-bit RISC-V only, not SP1)
+#if defined(__riscv) && !defined(SP1_TARGET)
 extern "C" void divrem256_c(uint64_t const* a, uint64_t const* b, uint64_t* q, uint64_t* r);
 extern "C" void addmod256_c(uint64_t const* a, uint64_t const* b, uint64_t const* m, uint64_t* result);
 extern "C" void mulmod256_c(uint64_t const* a, uint64_t const* b, uint64_t const* m, uint64_t* result);
@@ -49,12 +49,12 @@ namespace monad::vm::runtime
         uint256_t *, uint256_t const *,
         uint256_t const *) noexcept = monad_vm_runtime_mul;
 
-    // Division: use zisk divrem256_c on RISC-V, intx on x86
+    // Division: use zisk divrem256_c on RISC-V (ZisK), intx on x86/SP1
     inline void udiv(
         uint256_t *result_ptr, uint256_t const *a_ptr,
         uint256_t const *b_ptr) noexcept
     {
-#if defined(__riscv)
+#if defined(__riscv) && !defined(SP1_TARGET)
         uint256_t remainder;
         divrem256_c(
             reinterpret_cast<uint64_t const*>(a_ptr),
@@ -84,12 +84,12 @@ namespace monad::vm::runtime
         *result_ptr = sdivrem(*a_ptr, *b_ptr).quot;
     }
 
-    // Modulo: use zisk divrem256_c on RISC-V, intx on x86
+    // Modulo: use zisk divrem256_c on RISC-V (ZisK), intx on x86/SP1
     inline void umod(
         uint256_t *result_ptr, uint256_t const *a_ptr,
         uint256_t const *b_ptr) noexcept
     {
-#if defined(__riscv)
+#if defined(__riscv) && !defined(SP1_TARGET)
         uint256_t quotient;
         divrem256_c(
             reinterpret_cast<uint64_t const*>(a_ptr),
@@ -118,12 +118,12 @@ namespace monad::vm::runtime
         *result_ptr = sdivrem(*a_ptr, *b_ptr).rem;
     }
 
-    // Addmod: use zisk addmod256_c on RISC-V, intx on x86
+    // Addmod: use zisk addmod256_c on RISC-V (ZisK), intx on x86/SP1
     inline void addmod(
         uint256_t *result_ptr, uint256_t const *a_ptr, uint256_t const *b_ptr,
         uint256_t const *n_ptr) noexcept
     {
-#if defined(__riscv)
+#if defined(__riscv) && !defined(SP1_TARGET)
         addmod256_c(
             reinterpret_cast<uint64_t const*>(a_ptr),
             reinterpret_cast<uint64_t const*>(b_ptr),
@@ -139,12 +139,12 @@ namespace monad::vm::runtime
 #endif
     }
 
-    // Mulmod: use zisk mulmod256_c on RISC-V, intx on x86
+    // Mulmod: use zisk mulmod256_c on RISC-V (ZisK), intx on x86/SP1
     inline void mulmod(
         uint256_t *result_ptr, uint256_t const *a_ptr, uint256_t const *b_ptr,
         uint256_t const *n_ptr) noexcept
     {
-#if defined(__riscv)
+#if defined(__riscv) && !defined(SP1_TARGET)
         mulmod256_c(
             reinterpret_cast<uint64_t const*>(a_ptr),
             reinterpret_cast<uint64_t const*>(b_ptr),
@@ -181,7 +181,7 @@ namespace monad::vm::runtime
         }
     }
 
-    // Exponentiation: use zisk wpow256_c on RISC-V, intx on x86
+    // Exponentiation: use zisk wpow256_c on RISC-V (ZisK), intx on x86/SP1
     template <Traits traits>
     inline void exp(Context *ctx, uint256_t *result_ptr, uint256_t const *a_ptr,
         uint256_t const *exponent_ptr) noexcept
@@ -190,7 +190,7 @@ namespace monad::vm::runtime
         auto exponent_cost = exp_dynamic_gas_cost_multiplier<traits>();
         ctx->deduct_gas(exponent_byte_size * exponent_cost);
 
-#if defined(__riscv)
+#if defined(__riscv) && !defined(SP1_TARGET)
         wpow256_c(
             reinterpret_cast<uint64_t const*>(a_ptr),
             reinterpret_cast<uint64_t const*>(exponent_ptr),

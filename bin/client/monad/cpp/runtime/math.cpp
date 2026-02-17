@@ -15,8 +15,8 @@
 
 #include "uint256.hpp"
 
-// RISC-V implementation of monad_vm_runtime_mul that calls zisk's wmul256_c
-#if defined(__riscv)
+// ZisK (rv64) implementation of monad_vm_runtime_mul that calls zisk's wmul256_c
+#if defined(__riscv) && !defined(SP1_TARGET)
 
 extern "C" void wmul256_c(uint64_t const* a, uint64_t const* b, uint64_t* result);
 
@@ -30,6 +30,19 @@ extern "C" void monad_vm_runtime_mul(
         reinterpret_cast<uint64_t const*>(right),
         reinterpret_cast<uint64_t*>(result)
     );
+}
+
+#endif
+
+// SP1 (rv32) software implementation of monad_vm_runtime_mul using intx
+#if defined(SP1_TARGET)
+
+extern "C" void monad_vm_runtime_mul(
+    monad::vm::runtime::uint256_t *result,
+    monad::vm::runtime::uint256_t const *left,
+    monad::vm::runtime::uint256_t const *right) noexcept
+{
+    *result = *left * *right;
 }
 
 #endif
