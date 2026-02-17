@@ -9,7 +9,7 @@ fn main() {
 
     // Determine which Make target to build
     let make_target = if target.contains("zkvm") || target.contains("riscv") {
-        "riscv"
+        "zisk"
     } else {
         "x86"
     };
@@ -20,8 +20,7 @@ fn main() {
     run_make(&[make_target], cpp_dir);
 
     // Determine the library path based on the target
-    let lib_subdir = if make_target == "riscv" { "riscv" } else { "x86" };
-    let lib_path = cpp_dir.join("build").join(lib_subdir);
+    let lib_path = cpp_dir.join("build").join(make_target);
 
     // Link the static library
     println!("cargo:rustc-link-search=native={}", lib_path.display());
@@ -29,8 +28,8 @@ fn main() {
 
     // For RISC-V, don't link libgcc to avoid relocation issues with __clzdi2
     // We provide our own implementations of required libgcc functions in runtime_math.cpp
-    // and use newlib sources from cpp/libc_riscv/
-    if make_target == "riscv" {
+    // and use newlib sources from cpp/libc_zisk/
+    if make_target == "zisk" {
         // No libgcc linking for RISC-V
         // Force 8-byte alignment for .srodata.cst4 sections (ZisK VM requires it)
         let align_ld = env::current_dir().unwrap().join("align.ld");
