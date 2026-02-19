@@ -26,11 +26,9 @@ fn main() {
     println!("cargo:rustc-link-search=native={}", lib_path.display());
     println!("cargo:rustc-link-lib=static=monad_wrapper");
 
-    // For RISC-V, don't link libgcc to avoid relocation issues with __clzdi2
-    // We provide our own implementations of required libgcc functions in runtime_math.cpp
-    // and use newlib sources from cpp/libc_zisk/
+    // For RISC-V, don't link libgcc — Rust's compiler_builtins provides all
+    // needed runtime helpers (__clzdi2, __bswapdi2, __bswapsi2, etc.)
     if make_target == "zisk" {
-        // No libgcc linking for RISC-V
         // Force 8-byte alignment for .srodata.cst4 sections (ZisK VM requires it)
         let align_ld = env::current_dir().unwrap().join("align.ld");
         println!("cargo:rustc-link-arg=-T{}", align_ld.display());
