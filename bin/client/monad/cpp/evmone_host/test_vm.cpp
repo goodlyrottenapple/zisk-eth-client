@@ -1,6 +1,6 @@
 #include "test_vm.hpp"
 
-#include "../evm/traits.hpp"
+#include "evm/traits.hpp"
 
 #include <evmc/evmc.hpp>
 

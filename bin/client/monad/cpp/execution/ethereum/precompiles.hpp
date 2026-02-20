@@ -20,7 +20,7 @@
 // #include <category/execution/ethereum/core/address.hpp>
 // #include <category/execution/ethereum/state3/state.hpp>
 // #include <category/execution/ethereum/trace/call_tracer.hpp>
-#include "../../evm/traits.hpp"
+#include "evm/traits.hpp"
 
 #include <evmc/evmc.h>
 #include <evmc/evmc.hpp>

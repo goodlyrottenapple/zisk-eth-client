@@ -5,18 +5,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <sys/reent.h>
 
 extern "C" {
-
-#if defined(SP1_TARGET)
-// SP1: allocator provided by sp1-zkvm Rust runtime via FFI
-extern void* sp1_alloc_aligned(size_t bytes, size_t align);
-#else
-// ZisK: allocator provided by ziskos entrypoint library
-extern void* sys_alloc_aligned(size_t bytes, size_t align);
-#endif
 
 void _exit(int status) {
 #if defined(SP1_TARGET)
@@ -72,35 +65,6 @@ int _kill(int pid, int sig) {
 
 int _getpid(void) {
     return 1;
-}
-
-// Provide malloc/free implementation using zkVM allocator
-void* malloc(size_t size) {
-    if (size == 0) {
-        return nullptr;
-    }
-    // Use 16-byte alignment for compatibility with intx and general use
-#if defined(SP1_TARGET)
-    return sp1_alloc_aligned(size, 16);
-#else
-    return sys_alloc_aligned(size, 16);
-#endif
-}
-
-void free(void* ptr) {
-    // Zisk uses a bump allocator - no actual deallocation
-    // This is fine for our use case since Intercode is allocated once per execution
-    (void)ptr;
-}
-
-void* calloc(size_t num, size_t size) {
-    size_t total = num * size;
-    void* ptr = malloc(total);
-    if (ptr) {
-        // Zero the memory using memset
-        memset(ptr, 0, total);
-    }
-    return ptr;
 }
 
 void* realloc(void* ptr, size_t new_size) {

@@ -5,7 +5,7 @@
 #include "host.hpp"
 // TODO #include "hash_utils.hpp"
 #include "../execution/ethereum/precompiles.hpp"
-#include "../evm/traits.hpp"
+#include "evm/traits.hpp"
 
 // #include "../evmone/constants.hpp"
 // #include "../evmone/eof.hpp"
@@ -467,29 +467,34 @@ evmc::Result Host::call(const evmc_message& orig_msg) noexcept
     return result;
 }
 
-evmc_tx_context Host::get_tx_context() const noexcept
+const evmc_tx_context* Host::get_tx_context() const noexcept
 {
-    // TODO: The effective gas price is already computed in transaction validation.
-    // TODO: The effective gas price calculation is broken for system calls (gas price 0).
-    assert(m_tx.max_gas_price >= m_block.base_fee || m_tx.max_gas_price == 0);
-    const auto priority_gas_price =
-        std::min(m_tx.max_priority_gas_price, m_tx.max_gas_price - m_block.base_fee);
-    const auto effective_gas_price = m_block.base_fee + priority_gas_price;
+    if (!m_tx_context_initialized)
+    {
+        // TODO: The effective gas price is already computed in transaction validation.
+        // TODO: The effective gas price calculation is broken for system calls (gas price 0).
+        assert(m_tx.max_gas_price >= m_block.base_fee || m_tx.max_gas_price == 0);
+        const auto priority_gas_price =
+            std::min(m_tx.max_priority_gas_price, m_tx.max_gas_price - m_block.base_fee);
+        const auto effective_gas_price = m_block.base_fee + priority_gas_price;
 
-    return evmc_tx_context{
-        intx::be::store<uint256be>(effective_gas_price),  // By EIP-1559.
-        m_tx.sender,
-        m_block.coinbase,
-        m_block.number,
-        m_block.timestamp,
-        m_block.gas_limit,
-        m_block.prev_randao,
-        0x01_bytes32,  // Chain ID is expected to be 1.
-        uint256be{m_block.base_fee},
-        intx::be::store<uint256be>(m_block.blob_base_fee.value_or(0)),
-        m_tx.blob_hashes.data(),
-        m_tx.blob_hashes.size(),
-    };
+        m_tx_context = evmc_tx_context{
+            intx::be::store<uint256be>(effective_gas_price),  // By EIP-1559.
+            m_tx.sender,
+            m_block.coinbase,
+            m_block.number,
+            m_block.timestamp,
+            m_block.gas_limit,
+            m_block.prev_randao,
+            0x01_bytes32,  // Chain ID is expected to be 1.
+            uint256be{m_block.base_fee},
+            intx::be::store<uint256be>(m_block.blob_base_fee.value_or(0)),
+            m_tx.blob_hashes.data(),
+            m_tx.blob_hashes.size(),
+        };
+        m_tx_context_initialized = true;
+    }
+    return &m_tx_context;
 }
 
 bytes32 Host::get_block_hash(int64_t block_number) const noexcept

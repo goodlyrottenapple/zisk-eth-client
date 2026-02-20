@@ -30,20 +30,33 @@ fn main() {
 
     if make_target == "x86" {
         println!("cargo:rustc-link-lib=stdc++");
+    } else {
+        // Strip unused sections (C++ templates instantiate all EVM revisions,
+        // but we only use EVMC_CANCUN)
+        println!("cargo:rustc-link-arg=--gc-sections");
     }
 
     // Trigger rebuild if source files change
     println!("cargo:rerun-if-changed=../cpp/Makefile");
-    track_source_files(cpp_dir);
+
+    // Track all project source files for rebuilds (skip third_party/)
+    track_source_files(cpp_dir, true);
+
+    // Track monad submodule sources specifically
+    track_source_files(&cpp_dir.join("third_party/monad/category/vm"), false);
+    track_source_files(&cpp_dir.join("third_party/monad/category/zkvm"), false);
 }
 
-fn track_source_files(dir: &Path) {
+fn track_source_files(dir: &Path, skip_third_party: bool) {
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
 
             if path.is_dir() {
-                track_source_files(&path);
+                if skip_third_party && path.file_name().map_or(false, |n| n == "third_party") {
+                    continue;
+                }
+                track_source_files(&path, false);
             } else if let Some(ext) = path.extension() {
                 let ext_str = ext.to_string_lossy();
                 if ext_str == "h" || ext_str == "hpp" || ext_str == "c" || ext_str == "cpp" || ext_str == "S" {

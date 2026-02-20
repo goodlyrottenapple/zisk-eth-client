@@ -31,9 +31,8 @@
 
 namespace monad::vm
 {
-    VM::VM(std::size_t max_stack_cache, std::size_t max_memory_cache)
+    VM::VM(std::size_t max_stack_cache)
         : stack_allocator_{max_stack_cache}
-        , memory_allocator_{max_memory_cache}
     {
     }
 
@@ -43,13 +42,14 @@ namespace monad::vm
     {
         auto const *const host_itf = &host.get_interface();
         auto *const host_ctx = host.to_context();
-        auto rt_ctx = runtime::Context::from(
-            memory_allocator_, host_itf, host_ctx, msg, code);
+        auto rt_ctx = runtime::Context::from(host_itf, host_ctx, msg, code);
 
         // Install new runtime context:
         auto *const prev_rt_ctx = host.set_runtime_context(&rt_ctx);
 
         auto result = execute_bytecode_impl<traits>(rt_ctx, code);
+
+        rt_ctx.return_to<traits>(prev_rt_ctx);
 
         // Re-install previous runtime context:
         (void)host.set_runtime_context(prev_rt_ctx);
@@ -68,8 +68,7 @@ namespace monad::vm
         evmc_host_interface const *host, evmc_host_context *host_ctx,
         evmc_message const *msg, std::span<uint8_t const> code)
     {
-        auto rt_ctx = runtime::Context::from(
-            memory_allocator_, host, host_ctx, msg, code);
+        auto rt_ctx = runtime::Context::from(host, host_ctx, msg, code);
         return execute_bytecode_impl<traits>(rt_ctx, code);
     }
 
@@ -85,7 +84,7 @@ namespace monad::vm
         auto const stack_ptr = stack_allocator_.allocate();
         interpreter::execute<traits>(rt_ctx, monad::vm::interpreter::Intercode{code}, stack_ptr.get());
 
-        return rt_ctx.copy_to_evmc_result();
+        return rt_ctx.copy_to_evmc_result<traits>();
     }
 
     // Explicit instantiation for EVMC_CANCUN only

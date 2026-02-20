@@ -32,6 +32,9 @@ fn main() {
         // Force 8-byte alignment for .srodata.cst4 sections (ZisK VM requires it)
         let align_ld = env::current_dir().unwrap().join("align.ld");
         println!("cargo:rustc-link-arg=-T{}", align_ld.display());
+        // Strip unused sections (C++ templates instantiate all EVM revisions,
+        // but we only use EVMC_CANCUN)
+        println!("cargo:rustc-link-arg=--gc-sections");
     } else {
         // For x86, link C++ standard library
         println!("cargo:rustc-link-lib=stdc++");
@@ -40,18 +43,25 @@ fn main() {
     // Trigger rebuild if source files change
     println!("cargo:rerun-if-changed=cpp/Makefile");
 
-    // Track all source files for rebuilds
-    track_source_files(cpp_dir);
+    // Track all project source files for rebuilds (skip third_party/)
+    track_source_files(cpp_dir, true);
+
+    // Track monad submodule sources specifically
+    track_source_files(&cpp_dir.join("third_party/monad/category/vm"), false);
+    track_source_files(&cpp_dir.join("third_party/monad/category/zkvm"), false);
 }
 
-fn track_source_files(dir: &Path) {
+fn track_source_files(dir: &Path, skip_third_party: bool) {
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
 
             if path.is_dir() {
-                // Recursively track files in subdirectories
-                track_source_files(&path);
+                // Skip third_party/ when recursing from project root
+                if skip_third_party && path.file_name().map_or(false, |n| n == "third_party") {
+                    continue;
+                }
+                track_source_files(&path, false);
             } else if let Some(ext) = path.extension() {
                 // Track files with relevant extensions
                 let ext_str = ext.to_string_lossy();

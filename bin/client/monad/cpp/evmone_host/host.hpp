@@ -43,6 +43,8 @@ class Host : public evmc::Host
     const BlockHashes& m_block_hashes;
     const Transaction& m_tx;
     std::vector<Log> m_logs;
+    mutable evmc_tx_context m_tx_context{};
+    mutable bool m_tx_context_initialized = false;
 
 public:
     Host(evmc_revision rev, evmc::VM& vm, State& state, const BlockInfo& block,
@@ -82,7 +84,7 @@ private:
 
     evmc::Result create(const evmc_message& msg) noexcept;
 
-    [[nodiscard]] evmc_tx_context get_tx_context() const noexcept override;
+    [[nodiscard]] const evmc_tx_context* get_tx_context() const noexcept override;
 
     [[nodiscard]] bytes32 get_block_hash(int64_t block_number) const noexcept override;
 

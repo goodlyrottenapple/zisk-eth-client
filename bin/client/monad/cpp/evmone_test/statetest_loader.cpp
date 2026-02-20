@@ -5,7 +5,7 @@
 #include "utils.hpp"
 #include "statetest.hpp"
 #include "../evmone_host/precompiles.hpp"
-#include "../evm/delegation.hpp"
+#include "evm/delegation.hpp"
 #include <nlohmann/json.hpp>
 
 namespace evmone::test

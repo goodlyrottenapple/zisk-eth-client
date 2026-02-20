@@ -4,10 +4,6 @@
 #include <cstdint>
 #include <cstring>
 #include <span>
-#include "evm/opcodes.hpp"
-#include "runtime/types.hpp"
-#include "runtime/allocator.hpp"
-#include "runtime/cached_allocator.hpp"
 #include "evmone_host/host.hpp"
 #include "evmone_host/test_state.hpp"
 #include "evmone_host/test_vm.hpp"
@@ -16,12 +12,6 @@
 #include "evmone_host/mpt_hash.hpp"
 #include "evmone_test/blockchaintest.hpp"
 #include "converter/binary_format.hpp"
-
-namespace monad::vm::runtime
-{
-    CachedAllocatorList EvmStackAllocatorMeta::cache_list;
-    CachedAllocatorList EvmMemoryAllocatorMeta::cache_list;
-}
 
 // C interface for FFI
 extern "C" {

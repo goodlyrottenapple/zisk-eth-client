@@ -27,14 +27,11 @@ namespace monad::vm
     class VM
     {
         runtime::EvmStackAllocator stack_allocator_;
-        runtime::EvmMemoryAllocator memory_allocator_;
 
     public:
         explicit VM(
             std::size_t max_stack_cache_byte_size =
-                runtime::EvmStackAllocator::DEFAULT_MAX_CACHE_BYTE_SIZE,
-            std::size_t max_memory_cache_byte_size =
-                runtime::EvmMemoryAllocator::DEFAULT_MAX_CACHE_BYTE_SIZE);
+                runtime::EvmStackAllocator::DEFAULT_MAX_CACHE_BYTE_SIZE);
 
         /// Execute the bytecode `code` with interpreter.
         template <Traits traits>
