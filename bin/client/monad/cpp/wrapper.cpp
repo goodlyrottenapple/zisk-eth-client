@@ -16,6 +16,23 @@
 // C interface for FFI
 extern "C" {
 
+// Provide monad_assertion_failed for x86 builds.
+// category/vm/core/assert.cpp only defines it under MONAD_ZKVM;
+// category/core/assert.c has heavy backtrace dependencies we don't want.
+#ifndef MONAD_ZKVM
+void __attribute__((noreturn)) monad_assertion_failed(
+    const char *expr, const char *function, const char *file, long line,
+    const char *msg)
+{
+    fprintf(stderr, "%s:%ld: %s: Assertion '%s' failed.", file, line, function,
+            expr ? expr : "(null)");
+    if (msg)
+        fprintf(stderr, " %s", msg);
+    fprintf(stderr, "\n");
+    abort();
+}
+#endif
+
 // Simple memory pool for result allocation (avoids new/delete)
 static evmc_result result_storage;
 static evmone::test::TestVM* global_vm = nullptr;

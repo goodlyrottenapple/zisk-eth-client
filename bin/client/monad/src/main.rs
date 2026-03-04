@@ -3,6 +3,8 @@ ziskos::entrypoint!(main);
 
 mod ffi;
 
+mod zkvm_accelerators;
+
 use ziskos::set_output;
 
 /// Read input: on x86 from CLI arg (`-i <file>`), on RISC-V from ziskos memory-mapped input.

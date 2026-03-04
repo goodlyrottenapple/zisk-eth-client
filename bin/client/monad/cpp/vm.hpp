@@ -38,15 +38,10 @@ namespace monad::vm
         evmc::Result execute_bytecode(
             Host &host, evmc_message const *msg, std::span<uint8_t const> code);
 
-        /// Like `execute_bytecode`, but without stack unwind support.
+        /// Execute on a pre-built runtime context (no stack unwind support).
+        /// Caller is responsible for calling rt_ctx.return_to() afterwards.
         template <Traits traits>
         evmc::Result execute_bytecode_raw(
-            evmc_host_interface const *host, evmc_host_context *host_ctx,
-            evmc_message const *msg, std::span<uint8_t const> code);
-
-    private:
-        template <Traits traits>
-        evmc::Result execute_bytecode_impl(
             runtime::Context &rt_ctx, std::span<uint8_t const> code);
     };
 }

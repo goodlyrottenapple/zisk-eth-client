@@ -47,7 +47,7 @@ namespace monad::vm
         // Install new runtime context:
         auto *const prev_rt_ctx = host.set_runtime_context(&rt_ctx);
 
-        auto result = execute_bytecode_impl<traits>(rt_ctx, code);
+        auto result = execute_bytecode_raw<traits>(rt_ctx, code);
 
         rt_ctx.return_to<traits>(prev_rt_ctx);
 
@@ -65,20 +65,6 @@ namespace monad::vm
 
     template <Traits traits>
     evmc::Result VM::execute_bytecode_raw(
-        evmc_host_interface const *host, evmc_host_context *host_ctx,
-        evmc_message const *msg, std::span<uint8_t const> code)
-    {
-        auto rt_ctx = runtime::Context::from(host, host_ctx, msg, code);
-        return execute_bytecode_impl<traits>(rt_ctx, code);
-    }
-
-    // Explicit instantiation for EVMC_CANCUN only
-    template evmc::Result VM::execute_bytecode_raw<EvmTraits<EVMC_CANCUN>>(
-        evmc_host_interface const *, evmc_host_context *,
-        evmc_message const *, std::span<uint8_t const>);
-
-    template <Traits traits>
-    evmc::Result VM::execute_bytecode_impl(
         runtime::Context &rt_ctx, std::span<uint8_t const> code)
     {
         auto const stack_ptr = stack_allocator_.allocate();
@@ -88,6 +74,6 @@ namespace monad::vm
     }
 
     // Explicit instantiation for EVMC_CANCUN only
-    template evmc::Result VM::execute_bytecode_impl<EvmTraits<EVMC_CANCUN>>(
+    template evmc::Result VM::execute_bytecode_raw<EvmTraits<EVMC_CANCUN>>(
         runtime::Context &, std::span<uint8_t const>);
 }

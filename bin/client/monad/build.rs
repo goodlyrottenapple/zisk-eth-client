@@ -36,8 +36,10 @@ fn main() {
         // but we only use EVMC_CANCUN)
         println!("cargo:rustc-link-arg=--gc-sections");
     } else {
-        // For x86, link C++ standard library
+        // For x86, link C++ standard library and precompile dependencies
         println!("cargo:rustc-link-lib=stdc++");
+        println!("cargo:rustc-link-lib=crypto++");
+        println!("cargo:rustc-link-lib=gmp");
     }
 
     // Trigger rebuild if source files change

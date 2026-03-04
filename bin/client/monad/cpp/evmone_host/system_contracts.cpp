@@ -62,6 +62,7 @@ std::pair<StateDiff, std::vector<Requests>> system_call(
     std::span<const SystemContract> system_contracts, const StateView& state_view,
     const BlockInfo& block, const state::BlockHashes& block_hashes, evmc_revision rev, evmc::VM& vm)
 {
+    alignas(32) static uint8_t dummy_memory[32] = {};
     State state{state_view};
     std::vector<Requests> requests;
     for (const auto& [since, addr, get_input, request_type] : system_contracts)
@@ -93,6 +94,9 @@ std::pair<StateDiff, std::vector<Requests>> system_call(
             .sender = SYSTEM_ADDRESS,
             .input_data = input.data(),
             .input_size = input.size(),
+            .memory_handle = dummy_memory,
+            .memory = dummy_memory,
+            .memory_capacity = sizeof(dummy_memory),
         };
 
         const Transaction empty_tx{};

@@ -1,9 +1,12 @@
 # Compilers
 CXX_X86 = g++-15
 CC_X86 = gcc-15
-CXX_RISCV64 = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-g++
-CC_RISCV64 = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-gcc
-AR_RISCV64 = /home/sam/.zisk/riscv/bin/riscv64-unknown-elf-ar
+
+# RISC-V toolchain (nix-built GCC 15 cross-compiler with minimal newlib)
+RISCV_TOOLCHAIN_DIR ?= $(shell nix-build $(MONAD_DIR)/riscv64-none-elf.nix --no-out-link)
+CXX_RISCV64 = $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-g++
+CC_RISCV64 = $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-gcc
+AR_RISCV64 = $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-ar
 
 # Monad submodule paths
 MONAD_DIR = third_party/monad
@@ -40,30 +43,19 @@ ASFLAGS_SP1 = -march=rv64im -mabi=lp64 -Ilibc_riscv
 # ============================================================================
 
 # Project-specific sources (NOT from monad interpreter)
+# Precompile code comes from the cmake-built libmonad-zkvm.a (via monad_objs/).
 SOURCES_PROJECT = $(wildcard *.cpp) $(wildcard core/*.cpp) $(wildcard evmone_host/*.cpp) \
-                  $(wildcard execution/ethereum/*.cpp) $(wildcard evmone_test/*.cpp)
+                  $(wildcard evmone_test/*.cpp)
 
 # JSON-dependent sources (only needed for x86 converter, not for RISC-V runtime)
 JSON_SOURCES = evmone_test/blockchaintest_loader.cpp evmone_test/statetest_loader.cpp evmone_test/utils.cpp
 
-# Monad interpreter sources from submodule (for x86 direct compilation)
-MONAD_CPP_SOURCES = $(wildcard $(MONAD_VM_DIR)/interpreter/*.cpp) \
-                    $(wildcard $(MONAD_VM_DIR)/runtime/*.cpp) \
-                    $(wildcard $(MONAD_VM_DIR)/core/*.cpp) \
-                    $(wildcard $(MONAD_VM_DIR)/evm/*.cpp)
-MONAD_ASM_SOURCES = $(MONAD_VM_DIR)/runtime/math.S \
-                    $(MONAD_VM_DIR)/runtime/exit.S \
-                    $(MONAD_VM_DIR)/runtime/context.S \
-                    $(MONAD_VM_DIR)/runtime/transmute.S \
-                    $(MONAD_VM_DIR)/interpreter/entry.S
+# x86: project sources (monad interpreter comes from cmake-built libmonad-zkvm.a)
+SOURCES_X86 = $(SOURCES_PROJECT)
 
-# x86: project sources + monad sources from submodule
-SOURCES_X86 = $(SOURCES_PROJECT) $(MONAD_CPP_SOURCES)
-ASM_SOURCES_X86 = $(MONAD_ASM_SOURCES)
-
-# RISC-V: project sources only (monad comes from cmake-built libmonad-zkvm.a)
-SOURCES_ZISK = $(filter-out $(JSON_SOURCES) execution/ethereum/precompiles_bls12.cpp,$(SOURCES_PROJECT))
-SOURCES_SP1 = $(filter-out $(JSON_SOURCES) execution/ethereum/precompiles_bls12.cpp,$(SOURCES_PROJECT))
+# RISC-V: project sources only (monad + precompiles come from cmake-built libmonad-zkvm.a)
+SOURCES_ZISK = $(filter-out $(JSON_SOURCES),$(SOURCES_PROJECT))
+SOURCES_SP1 = $(filter-out $(JSON_SOURCES),$(SOURCES_PROJECT))
 
 # ============================================================================
 # Third-party library sources
@@ -102,25 +94,13 @@ GMP_COMPAT_C_SOURCES = gmp_mini_compat.c
 # Object file lists
 # ============================================================================
 
-# x86 objects
-MONAD_OBJECTS_X86 = $(patsubst $(MONAD_VM_DIR)/%.cpp,build/x86/monad_%.o,$(MONAD_CPP_SOURCES))
-MONAD_ASM_OBJECTS_X86 = $(patsubst $(MONAD_VM_DIR)/%.S,build/x86/monad_%_asm.o,$(MONAD_ASM_SOURCES))
+# x86 objects — ethash is compiled by Makefile; all other third-party libs
+# (silkpre, libff, secp256k1, blst, c-kzg-4844) come from cmake via precompile_deps_objs.
 ETHASH_OBJECTS_X86 = $(patsubst third_party/ethash/lib/%.cpp,build/x86/ethash_%.o,$(ETHASH_CPP_SOURCES)) \
                      $(patsubst third_party/ethash/lib/%.c,build/x86/ethash_%.o,$(ETHASH_C_SOURCES))
-SILKPRE_OBJECTS_X86 = $(patsubst third_party/silkpre/lib/%.cpp,build/x86/silkpre_%.o,$(SILKPRE_CPP_SOURCES)) \
-                      $(patsubst third_party/silkpre/lib/%.c,build/x86/silkpre_%.o,$(SILKPRE_C_SOURCES))
-LIBFF_OBJECTS_X86 = $(patsubst third_party/silkpre/third_party/libff/libff/%.cpp,build/x86/libff_%.o,$(LIBFF_CPP_SOURCES))
-SECP256K1_OBJECTS_X86 = $(patsubst third_party/silkpre/third_party/secp256k1/src/%.c,build/x86/secp256k1_%.o,$(SECP256K1_C_SOURCES))
-BLST_OBJECTS_X86 = $(patsubst third_party/blst/src/%.c,build/x86/blst_%.o,$(BLST_C_SOURCES)) \
-                   $(patsubst third_party/blst/build/%.S,build/x86/blst_%.o,$(BLST_ASM_SOURCES))
+
 OBJECTS_X86 = $(patsubst %.cpp,build/x86/%.o,$(SOURCES_PROJECT)) \
-              $(MONAD_OBJECTS_X86) \
-              $(MONAD_ASM_OBJECTS_X86) \
-              $(ETHASH_OBJECTS_X86) \
-              $(SILKPRE_OBJECTS_X86) \
-              $(LIBFF_OBJECTS_X86) \
-              $(SECP256K1_OBJECTS_X86) \
-              $(BLST_OBJECTS_X86)
+              $(ETHASH_OBJECTS_X86)
 
 # RISC-V (ZisK) objects — project-specific only; monad comes from cmake
 LIBC_ASM_SOURCES = $(wildcard libc_riscv/*.S)
@@ -167,6 +147,7 @@ LIB_ZISK = build/zisk/libmonad_wrapper.a
 LIB_SP1 = build/sp1/libmonad_wrapper.a
 
 # cmake build directories for monad interpreter
+MONAD_BUILD_X86 = build/monad-x86
 MONAD_BUILD_ZISK = build/monad-zisk
 MONAD_BUILD_SP1 = build/monad-sp1
 
@@ -185,13 +166,22 @@ $(PATCH_MARKER):
 	@touch $(PATCH_MARKER)
 
 # ============================================================================
-# cmake builds for monad interpreter (RISC-V only)
+# cmake builds for monad interpreter
 # ============================================================================
+
+$(MONAD_BUILD_X86)/libmonad-zkvm.a:
+	cmake -B $(MONAD_BUILD_X86) -S $(MONAD_ZKVM_SRC) \
+		-DMONAD_ZKVM_BACKEND=native \
+		-DCMAKE_TOOLCHAIN_FILE=$(abspath $(MONAD_DIR)/category/core/toolchains/gcc-avx2.cmake) \
+		-DCMAKE_C_COMPILER=$(CC_X86) \
+		-DCMAKE_CXX_COMPILER=$(CXX_X86) \
+		-DCMAKE_BUILD_TYPE=Release
+	cmake --build $(MONAD_BUILD_X86)
 
 $(MONAD_BUILD_ZISK)/libmonad-zkvm.a:
 	cmake -B $(MONAD_BUILD_ZISK) -S $(MONAD_ZKVM_SRC) \
 		-DCMAKE_TOOLCHAIN_FILE=$(abspath $(MONAD_TOOLCHAIN)) \
-		-DRISCV_TOOLCHAIN_DIR=$(HOME)/.zisk/riscv \
+		-DRISCV_TOOLCHAIN_DIR=$(RISCV_TOOLCHAIN_DIR) \
 		-DMONAD_ZKVM_BACKEND=zisk \
 		-DCMAKE_BUILD_TYPE=Release
 	cmake --build $(MONAD_BUILD_ZISK)
@@ -199,7 +189,7 @@ $(MONAD_BUILD_ZISK)/libmonad-zkvm.a:
 $(MONAD_BUILD_SP1)/libmonad-zkvm.a:
 	cmake -B $(MONAD_BUILD_SP1) -S $(MONAD_ZKVM_SRC) \
 		-DCMAKE_TOOLCHAIN_FILE=$(abspath $(MONAD_TOOLCHAIN)) \
-		-DRISCV_TOOLCHAIN_DIR=$(HOME)/.zisk/riscv \
+		-DRISCV_TOOLCHAIN_DIR=$(RISCV_TOOLCHAIN_DIR) \
 		-DMONAD_ZKVM_BACKEND=sp1 \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_C_FLAGS_INIT="-march=rv64im -mabi=lp64 -mcmodel=medany -nostartfiles -ffunction-sections -fdata-sections" \
@@ -208,6 +198,20 @@ $(MONAD_BUILD_SP1)/libmonad-zkvm.a:
 	cmake --build $(MONAD_BUILD_SP1)
 
 # Extract monad objects from cmake archive (removing keccak — we use our patched version)
+build/x86/monad_objs: $(MONAD_BUILD_X86)/libmonad-zkvm.a
+	@rm -rf $@ && mkdir -p $@
+	cd $@ && ar x $(abspath $<)
+	rm -f $@/keccak*
+
+# Extract precompile dependency objects from cmake-built libraries
+build/x86/precompile_deps_objs: $(MONAD_BUILD_X86)/libmonad-zkvm.a
+	@rm -rf $@ && mkdir -p $@
+	cd $@ && ar x $(abspath $(MONAD_BUILD_X86)/libblst.a)
+	cd $@ && ar x $(abspath $(MONAD_BUILD_X86)/_silkpre/lib/libsilkpre.a)
+	cd $@ && ar x $(abspath $(MONAD_BUILD_X86)/_silkpre/third_party/libff/libff/libff.a)
+	cd $@ && ar x $(abspath $(MONAD_BUILD_X86)/_silkpre/libsecp256k1.a)
+	cd $@ && ar x $(abspath $(MONAD_BUILD_X86)/_c-kzg-4844/libc-kzg-4844.a)
+
 build/zisk/monad_objs: $(MONAD_BUILD_ZISK)/libmonad-zkvm.a
 	@rm -rf $@ && mkdir -p $@
 	cd $@ && $(AR_RISCV64) x $(abspath $<)
@@ -224,9 +228,9 @@ build/sp1/monad_objs: $(MONAD_BUILD_SP1)/libmonad-zkvm.a
 
 x86: apply-patches $(LIB_X86)
 
-$(LIB_X86): $(OBJECTS_X86)
+$(LIB_X86): $(OBJECTS_X86) build/x86/monad_objs build/x86/precompile_deps_objs
 	@mkdir -p build/x86
-	ar rcs $(LIB_X86) $(OBJECTS_X86)
+	ar rcs $(LIB_X86) $(OBJECTS_X86) build/x86/monad_objs/*.o build/x86/precompile_deps_objs/*.o
 
 # Project-specific compilation rules for x86
 build/x86/%.o: %.cpp
@@ -241,40 +245,12 @@ build/x86/evmone_host/%.o: evmone_host/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
 
-build/x86/execution/ethereum/%.o: execution/ethereum/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
-
 build/x86/evmone_test/%.o: evmone_test/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
 
-# Monad interpreter compilation rules for x86 (from submodule)
-build/x86/monad_interpreter/%.o: $(MONAD_VM_DIR)/interpreter/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
-
-build/x86/monad_runtime/%.o: $(MONAD_VM_DIR)/runtime/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
-
-build/x86/monad_core/%.o: $(MONAD_VM_DIR)/core/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
-
-build/x86/monad_evm/%.o: $(MONAD_VM_DIR)/evm/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
-
-build/x86/monad_runtime/%_asm.o: $(MONAD_VM_DIR)/runtime/%.S
-	@mkdir -p $(dir $@)
-	$(CXX_X86) -c $< -o $@
-
-build/x86/monad_interpreter/%_asm.o: $(MONAD_VM_DIR)/interpreter/%.S
-	@mkdir -p $(dir $@)
-	$(CXX_X86) -c $< -o $@
-
-# Third-party library compilation for x86
+# Third-party library compilation for x86 (ethash only; silkpre, libff,
+# secp256k1, blst, c-kzg-4844 come from cmake via precompile_deps_objs)
 build/x86/ethash_%.o: third_party/ethash/lib/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
@@ -282,30 +258,6 @@ build/x86/ethash_%.o: third_party/ethash/lib/%.cpp
 build/x86/ethash_%.o: third_party/ethash/lib/%.c
 	@mkdir -p $(dir $@)
 	$(CC_X86) $(CFLAGS_X86) -c $< -o $@
-
-build/x86/silkpre_%.o: third_party/silkpre/lib/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
-
-build/x86/silkpre_%.o: third_party/silkpre/lib/%.c
-	@mkdir -p $(dir $@)
-	$(CC_X86) $(CFLAGS_X86) -c $< -o $@
-
-build/x86/libff_%.o: third_party/silkpre/third_party/libff/libff/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_X86) $(CXXFLAGS_X86) -DNO_PROCPS=1 -DCURVE_BN128 -DBN_SUPPORT_SNARK=1 -c $< -o $@
-
-build/x86/secp256k1_%.o: third_party/silkpre/third_party/secp256k1/src/%.c
-	@mkdir -p $(dir $@)
-	$(CC_X86) $(CFLAGS_X86) -DECMULT_GEN_PREC_BITS=4 -DECMULT_WINDOW_SIZE=15 -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -c $< -o $@
-
-build/x86/blst_server.o: third_party/blst/src/server.c
-	@mkdir -p $(dir $@)
-	$(CC_X86) $(CFLAGS_X86) -D__ADX__ -c $< -o $@
-
-build/x86/blst_assembly.o: third_party/blst/build/assembly.S
-	@mkdir -p $(dir $@)
-	$(CC_X86) $(CFLAGS_X86) -D__ADX__ -c $< -o $@
 
 # ============================================================================
 # ZisK RISC-V target (monad interpreter built via cmake)
@@ -315,7 +267,7 @@ zisk: apply-patches $(LIB_ZISK)
 
 $(LIB_ZISK): $(OBJECTS_ZISK) build/zisk/monad_objs
 	@mkdir -p build/zisk
-	$(AR_RISCV64) rcs $(LIB_ZISK) $(OBJECTS_ZISK) build/zisk/monad_objs/*.*obj
+	$(AR_RISCV64) rcs $(LIB_ZISK) $(OBJECTS_ZISK) build/zisk/monad_objs/*.o build/zisk/monad_objs/*.obj
 
 build/zisk/%.o: %.cpp
 	@mkdir -p $(dir $@)
@@ -326,10 +278,6 @@ build/zisk/core/%.o: core/%.cpp
 	$(CXX_RISCV64) $(CXXFLAGS_ZISK) -c $< -o $@
 
 build/zisk/evmone_host/%.o: evmone_host/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_RISCV64) $(CXXFLAGS_ZISK) -c $< -o $@
-
-build/zisk/execution/ethereum/%.o: execution/ethereum/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV64) $(CXXFLAGS_ZISK) -c $< -o $@
 
@@ -381,7 +329,7 @@ sp1: apply-patches $(LIB_SP1)
 
 $(LIB_SP1): $(OBJECTS_SP1) build/sp1/monad_objs
 	@mkdir -p build/sp1
-	$(AR_RISCV64) rcs $(LIB_SP1) $(OBJECTS_SP1) build/sp1/monad_objs/*.*obj
+	$(AR_RISCV64) rcs $(LIB_SP1) $(OBJECTS_SP1) build/sp1/monad_objs/*.o build/sp1/monad_objs/*.obj
 
 build/sp1/%.o: %.cpp
 	@mkdir -p $(dir $@)
@@ -392,10 +340,6 @@ build/sp1/core/%.o: core/%.cpp
 	$(CXX_RISCV64) $(CXXFLAGS_SP1) -c $< -o $@
 
 build/sp1/evmone_host/%.o: evmone_host/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_RISCV64) $(CXXFLAGS_SP1) -c $< -o $@
-
-build/sp1/execution/ethereum/%.o: execution/ethereum/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV64) $(CXXFLAGS_SP1) -c $< -o $@
 

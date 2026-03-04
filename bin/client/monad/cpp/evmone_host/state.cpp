@@ -10,7 +10,11 @@
 #include "delegation.hpp"
 // #include "../evmone/eof.hpp"
 // #include <evmone_precompiles/secp256k1.hpp>
+#ifdef MONAD_ZKVM
+#include <category/zkvm/zkvm_allocator.h>
+#endif
 #include <algorithm>
+#include <cstring>
 
 using namespace intx;
 
@@ -614,7 +618,28 @@ TransactionReceipt transition(const StateView& state_view, const BlockInfo& bloc
         }
     }
 
+    // Allocate EVM memory for the top-level message.  The Monad interpreter
+    // requires memory_handle / memory / memory_capacity on every message;
+    // nested calls inherit memory from the parent context, but the top-level
+    // call must provide the initial allocation.
+    constexpr uint32_t MSG_MEMORY_CAPACITY = 8 * 1024 * 1024;  // 8 MiB
+#ifdef MONAD_ZKVM
+    auto* const msg_memory = static_cast<uint8_t*>(
+        zkvm_aligned_alloc(32, MSG_MEMORY_CAPACITY));
+#else
+    auto* const msg_memory = static_cast<uint8_t*>(
+        std::aligned_alloc(32, MSG_MEMORY_CAPACITY));
+#endif
+    std::memset(msg_memory, 0, MSG_MEMORY_CAPACITY);
+    message.memory_handle = msg_memory;
+    message.memory = msg_memory;
+    message.memory_capacity = MSG_MEMORY_CAPACITY;
+
     const auto result = host.call(message);
+
+#ifndef MONAD_ZKVM
+    std::free(msg_memory);
+#endif
     printf("DEBUG: tx.gas_limit = %ld\n", tx.gas_limit);
     printf("DEBUG: result.gas_left = %ld\n", result.gas_left);
     printf("DEBUG: result.status_code = %d\n", result.status_code);

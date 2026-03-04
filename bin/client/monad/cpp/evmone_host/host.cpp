@@ -3,9 +3,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "host.hpp"
-// TODO #include "hash_utils.hpp"
-#include "../execution/ethereum/precompiles.hpp"
 #include "evm/traits.hpp"
+
+// Forward-declare the precompile check we use, avoiding the heavy
+// precompiles.hpp header which transitively pulls in the full monad
+// state3/vm/compiler dependency tree.
+namespace monad {
+template <Traits traits>
+std::optional<evmc::Result> check_call_eth_precompile(evmc_message const &);
+}
 
 // #include "../evmone/constants.hpp"
 // #include "../evmone/eof.hpp"

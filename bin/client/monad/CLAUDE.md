@@ -60,25 +60,68 @@ main.rs (Zisk entrypoint)
 - `cpp/evmone_test/blockchaintest_loader.cpp` - JSON blockchain test parser
 
 ### Build System
-- `build.rs` detects target arch, runs `make riscv` or `make x86` in `cpp/`, then links `libmonad_wrapper.a`
+- `build.rs` detects target arch, runs `make zisk`, `make sp1`, or `make x86` in `cpp/`, then links `libmonad_wrapper.a`
 - `cpp/Makefile` is the primary C++ build config. Compiles with C++23, `-O3`. RISC-V uses bare-metal flags (`-nostdlib++`, `-fno-exceptions`, `-fno-rtti`)
-- x86 uses `g++-15`, RISC-V uses the ZisK cross-compiler
-- BLST (BLS12-381) is excluded from RISC-V builds (x86/ARM assembly only)
-- RISC-V uses mini-gmp instead of system GMP
+- x86 uses `g++-15`, RISC-V uses a nix-built GCC 15 cross-compiler (toolchain resolved via `nix-build` from the monad submodule's `riscv64-none-elf.nix`)
 - Patches are applied to ethash via `make apply-patches` (runs automatically)
 
+### Monad Submodule (`cpp/third_party/monad`)
+The Monad EVM interpreter and precompile implementations live in the `third_party/monad` git submodule. The cmake entry point is `category/zkvm/CMakeLists.txt`, which builds a standalone `libmonad-zkvm.a` without the full monad dependency tree.
+
+**cmake build flow** (driven by Makefile targets):
+1. cmake configures from `$(MONAD_ZKVM_SRC)` (`category/zkvm/`) with a backend flag (`native`, `zisk`, or `sp1`)
+2. cmake builds `libmonad-zkvm.a` plus precompile dependency libraries (libsilkpre, libff, libsecp256k1, libblst, libc-kzg-4844)
+3. Makefile extracts `.o` files from the cmake archives into `build/<target>/monad_objs/` and `build/<target>/precompile_deps_objs/`
+4. Extracted objects are linked into the final `libmonad_wrapper.a` alongside project-specific objects
+
+**Per-target cmake configuration:**
+- **x86**: `MONAD_ZKVM_BACKEND=native`, uses `gcc-avx2.cmake` toolchain. Precompile deps (silkpre, libff, secp256k1, blst, c-kzg-4844) extracted separately into `precompile_deps_objs/`
+- **ZisK**: `MONAD_ZKVM_BACKEND=zisk`, uses `riscv64-elf-toolchain.cmake`. Precompile deps bundled inside `libmonad-zkvm.a`
+- **SP1**: `MONAD_ZKVM_BACKEND=sp1`, same toolchain with `rv64im` arch (no atomics)
+
+**Important**: keccak objects are removed from the extracted monad archive (`rm -f $@/keccak*`) because we use our own patched ethash keccak for now.
+
 ### Third-Party Libraries (cpp/third_party/)
-- `intx` - 256-bit integers
-- `ethash` - Keccak hashing (patched for Zisk)
-- `silkpre` - Ethereum precompile implementations (includes libff for BN254, secp256k1)
-- `blst` - BLS12-381 (x86 only)
-- `evmc` - Ethereum VM interface standard
+- `monad` - Git submodule containing the Monad EVM interpreter, precompiles, and their dependencies (intx, evmc, ethash, silkpre, libff, secp256k1, blst, c-kzg-4844). Built via cmake (see above)
+- `ethash` - Keccak hashing (patched for Zisk) — our local copy overrides the one inside monad
 - `nlohmann/json.hpp` - JSON parsing
 - `unordered_dense` - Fast hash maps
 - `gmp/mini-gmp` - Minimal GMP for RISC-V bare-metal
 
 ### Dual Compilation Model
 All C++ code compiles for both x86 (native testing) and RISC-V (ZisK proving). RISC-V builds use `cpp/libc_riscv/` for bare-metal C library stubs. When adding new C++ files, update both build paths in the Makefile.
+
+## Scripts
+
+### `scripts/prepare_tests.sh`
+Downloads and converts Ethereum blockchain test fixtures to binary format for the Cancun revision. Steps:
+1. Clones `ethereum/tests` repo (pinned to commit `e46e1db503`) into `tmp/`
+2. Downloads `execution-spec-tests` fixtures (v5.4.0) into `tmp/`
+3. Builds the `ethtest_converter` tool via `make -C cpp converter`
+4. Converts all JSON tests to `.bin` files in `build/tests/` (filtered to Cancun revision only)
+
+```bash
+./scripts/prepare_tests.sh
+```
+
+### `scripts/run_tests.sh`
+Runs the converted binary tests on x86, RISC-V, or both, and compares results. Includes an exclusion list for slow, unsupported, or known-failing tests (blobs, EIP-7610 collisions, time-consuming state tests, etc.).
+
+```bash
+# Run on both x86 and RISC-V (default)
+./scripts/run_tests.sh
+
+# Run on x86 only
+./scripts/run_tests.sh --x86-only
+
+# Run on RISC-V only
+./scripts/run_tests.sh --riscv-only
+
+# Filter tests by path substring
+./scripts/run_tests.sh --filter "stEIP1559"
+```
+
+Tests are expected to output "Test passed" on success. When both targets run, the script reports agreement/disagreement and exits non-zero if any tests disagree.
 
 ## Current Status
 
