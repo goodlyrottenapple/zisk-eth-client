@@ -25,18 +25,14 @@ MONAD_ZKVM_INCLUDES = -I$(MONAD_DIR)/category/zkvm/include $(MONAD_INCLUDES)
 # Compiler flags
 CXXFLAGS_COMMON = -std=c++23 -O3 -Ithird_party -Ithird_party/evmc/include -Ithird_party/intx/include -Ithird_party/ethash/include -Ithird_party/unordered_dense/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/libff -Ithird_party/silkpre/third_party/secp256k1/include
 CXXFLAGS_X86 = $(MONAD_INCLUDES) $(CXXFLAGS_COMMON) -fPIC -mavx2 -mbmi2
-CXXFLAGS_ZISK = $(MONAD_ZKVM_INCLUDES) $(CXXFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DMONAD_ZKVM -DMONAD_ZKVM_ZISK -DGMP_NUMB_BITS=64
-CXXFLAGS_SP1 = $(MONAD_ZKVM_INCLUDES) $(CXXFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=rv64im -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DMONAD_ZKVM -DMONAD_ZKVM_SP1 -DSP1_TARGET -DGMP_NUMB_BITS=64
+CXXFLAGS_ZISK = $(MONAD_ZKVM_INCLUDES) $(CXXFLAGS_COMMON) -Ithird_party/gmp/mini-gmp -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DMONAD_ZKVM -DMONAD_ZKVM_ZISK -DGMP_NUMB_BITS=64
+CXXFLAGS_SP1 = $(MONAD_ZKVM_INCLUDES) $(CXXFLAGS_COMMON) -Ithird_party/gmp/mini-gmp -march=rv64im -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DMONAD_ZKVM -DMONAD_ZKVM_SP1 -DSP1_TARGET -DGMP_NUMB_BITS=64
 
 # C compiler flags (for .c files)
 CFLAGS_COMMON = -O3 -Ithird_party/ethash/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/secp256k1/include
 CFLAGS_X86 = $(CFLAGS_COMMON) -fPIC
-CFLAGS_ZISK = $(CFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -ffunction-sections -fdata-sections -DUSE_NUM_NONE -DUSE_FIELD_INV_BUILTIN -DUSE_SCALAR_INV_BUILTIN -DUSE_FIELD_5X52 -DUSE_SCALAR_4X64 -DHAVE___INT128 -DECMULT_WINDOW_SIZE=15 -DECMULT_GEN_PREC_BITS=4 -DUSE_ENDOMORPHISM -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -DGMP_NUMB_BITS=64
-CFLAGS_SP1 = $(CFLAGS_COMMON) -Ilibc_riscv -Ithird_party/gmp/mini-gmp -march=rv64im -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -fno-exceptions -ffunction-sections -fdata-sections -DNDEBUG -DSP1_TARGET -DUSE_NUM_NONE -DUSE_FIELD_INV_BUILTIN -DUSE_SCALAR_INV_BUILTIN -DUSE_FIELD_5X52 -DUSE_SCALAR_4X64 -DHAVE___INT128 -DECMULT_WINDOW_SIZE=15 -DECMULT_GEN_PREC_BITS=4 -DUSE_ENDOMORPHISM -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -DGMP_NUMB_BITS=64
-
-# Assembly flags (for .S files in RISC-V build)
-ASFLAGS_ZISK = -march=rv64ima -mabi=lp64 -Ilibc_riscv
-ASFLAGS_SP1 = -march=rv64im -mabi=lp64 -Ilibc_riscv
+CFLAGS_ZISK = $(CFLAGS_COMMON) -Ithird_party/gmp/mini-gmp -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -ffunction-sections -fdata-sections -DUSE_NUM_NONE -DUSE_FIELD_INV_BUILTIN -DUSE_SCALAR_INV_BUILTIN -DUSE_FIELD_5X52 -DUSE_SCALAR_4X64 -DHAVE___INT128 -DECMULT_WINDOW_SIZE=15 -DECMULT_GEN_PREC_BITS=4 -DUSE_ENDOMORPHISM -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -DGMP_NUMB_BITS=64
+CFLAGS_SP1 = $(CFLAGS_COMMON) -Ithird_party/gmp/mini-gmp -march=rv64im -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -fno-exceptions -ffunction-sections -fdata-sections -DNDEBUG -DSP1_TARGET -DUSE_NUM_NONE -DUSE_FIELD_INV_BUILTIN -DUSE_SCALAR_INV_BUILTIN -DUSE_FIELD_5X52 -DUSE_SCALAR_4X64 -DHAVE___INT128 -DECMULT_WINDOW_SIZE=15 -DECMULT_GEN_PREC_BITS=4 -DUSE_ENDOMORPHISM -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -DGMP_NUMB_BITS=64
 
 # ============================================================================
 # Source file lists
@@ -99,8 +95,6 @@ OBJECTS_X86 = $(patsubst %.cpp,build/x86/%.o,$(SOURCES_PROJECT)) \
               $(ETHASH_OBJECTS_X86)
 
 # RISC-V (ZisK) objects — project-specific only; monad comes from cmake
-LIBC_ASM_SOURCES = $(wildcard libc_riscv/*.S)
-LIBC_OBJECTS_ZISK = $(patsubst libc_riscv/%.S,build/zisk/libc_riscv_%.o,$(LIBC_ASM_SOURCES))
 ETHASH_OBJECTS_ZISK = $(patsubst third_party/ethash/lib/%.cpp,build/zisk/ethash_%.o,$(ETHASH_RISCV_CPP_SOURCES)) \
                       $(patsubst third_party/ethash/lib/%.c,build/zisk/ethash_%.o,$(ETHASH_RISCV_C_SOURCES))
 SILKPRE_OBJECTS_ZISK = $(patsubst third_party/silkpre/lib/%.cpp,build/zisk/silkpre_%.o,$(SILKPRE_CPP_SOURCES)) \
@@ -110,7 +104,6 @@ SECP256K1_OBJECTS_ZISK = $(patsubst third_party/silkpre/third_party/secp256k1/sr
 MINI_GMP_OBJECTS_ZISK = $(patsubst third_party/gmp/mini-gmp/%.c,build/zisk/mini_gmp_%.o,$(MINI_GMP_C_SOURCES))
 GMP_COMPAT_OBJECTS_ZISK = $(patsubst %.c,build/zisk/%.o,$(GMP_COMPAT_C_SOURCES))
 OBJECTS_ZISK = $(patsubst %.cpp,build/zisk/%.o,$(SOURCES_ZISK)) \
-                $(LIBC_OBJECTS_ZISK) \
                 $(ETHASH_OBJECTS_ZISK) \
                 $(SILKPRE_OBJECTS_ZISK) \
                 $(LIBFF_OBJECTS_ZISK) \
@@ -119,7 +112,6 @@ OBJECTS_ZISK = $(patsubst %.cpp,build/zisk/%.o,$(SOURCES_ZISK)) \
                 $(GMP_COMPAT_OBJECTS_ZISK)
 
 # RISC-V (SP1) objects
-LIBC_OBJECTS_SP1 = $(patsubst libc_riscv/%.S,build/sp1/libc_riscv_%.o,$(LIBC_ASM_SOURCES))
 ETHASH_OBJECTS_SP1 = $(patsubst third_party/ethash/lib/%.cpp,build/sp1/ethash_%.o,$(ETHASH_RISCV_CPP_SOURCES)) \
                      $(patsubst third_party/ethash/lib/%.c,build/sp1/ethash_%.o,$(ETHASH_RISCV_C_SOURCES))
 SILKPRE_OBJECTS_SP1 = $(patsubst third_party/silkpre/lib/%.cpp,build/sp1/silkpre_%.o,$(SILKPRE_CPP_SOURCES)) \
@@ -129,7 +121,6 @@ SECP256K1_OBJECTS_SP1 = $(patsubst third_party/silkpre/third_party/secp256k1/src
 MINI_GMP_OBJECTS_SP1 = $(patsubst third_party/gmp/mini-gmp/%.c,build/sp1/mini_gmp_%.o,$(MINI_GMP_C_SOURCES))
 GMP_COMPAT_OBJECTS_SP1 = $(patsubst %.c,build/sp1/%.o,$(GMP_COMPAT_C_SOURCES))
 OBJECTS_SP1 = $(patsubst %.cpp,build/sp1/%.o,$(SOURCES_SP1)) \
-              $(LIBC_OBJECTS_SP1) \
               $(ETHASH_OBJECTS_SP1) \
               $(SILKPRE_OBJECTS_SP1) \
               $(LIBFF_OBJECTS_SP1) \
@@ -281,10 +272,6 @@ build/zisk/evmone_test/%.o: evmone_test/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV64) $(CXXFLAGS_ZISK) -c $< -o $@
 
-build/zisk/libc_riscv_%.o: libc_riscv/%.S
-	@mkdir -p build/zisk
-	$(CXX_RISCV64) $(ASFLAGS_ZISK) -c $< -o $@
-
 build/zisk/ethash_%.o: third_party/ethash/lib/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV64) $(CXXFLAGS_ZISK) -c $< -o $@
@@ -342,10 +329,6 @@ build/sp1/evmone_host/%.o: evmone_host/%.cpp
 build/sp1/evmone_test/%.o: evmone_test/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV64) $(CXXFLAGS_SP1) -c $< -o $@
-
-build/sp1/libc_riscv_%.o: libc_riscv/%.S
-	@mkdir -p build/sp1
-	$(CC_RISCV64) $(ASFLAGS_SP1) -c $< -o $@
 
 build/sp1/ethash_%.o: third_party/ethash/lib/%.cpp
 	@mkdir -p $(dir $@)
