@@ -1,16 +1,12 @@
 // Minimal C++ library stubs for RISC-V bare metal environment
-// C library functions are provided by newlib sources in libc_riscv/ directory
 // This file only contains C++ standard library stubs that are not in libstdc++
 #if defined(__riscv)
 
 #include <cstddef>
 #include <system_error>
-#include <stdexcept>
 
 extern "C" {
     void abort();  // Provided by syscalls_stubs.cpp
-    void* malloc(size_t size);  // Provided by syscalls_stubs.cpp
-    void free(void* ptr);  // Provided by syscalls_stubs.cpp
 
     // DSO handle for dynamic shared objects
     // In bare-metal RISC-V, we provide a dummy handle
@@ -35,11 +31,6 @@ extern "C" {
     void __cxa_guard_release(long long* guard) {
         // Mark as initialized
         *guard = 1;
-    }
-
-    void __cxa_guard_abort(long long* guard) {
-        // Initialization failed, reset guard
-        *guard = 0;
     }
 }
 

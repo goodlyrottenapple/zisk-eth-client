@@ -40,7 +40,7 @@ CFLAGS_SP1 = $(CFLAGS_COMMON) -march=rv64im -mabi=lp64 -nostartfiles -nostdlib -
 
 # Project-specific sources (NOT from monad interpreter)
 # Precompile code comes from the cmake-built libmonad-zkvm.a (via monad_objs/).
-SOURCES_PROJECT = $(wildcard *.cpp) $(wildcard core/*.cpp) $(wildcard evmone_host/*.cpp) \
+SOURCES_PROJECT = $(wildcard *.cpp) $(wildcard evmone_host/*.cpp) \
                   $(wildcard evmone_test/*.cpp)
 
 # JSON-dependent sources (only needed for x86 converter, not for RISC-V runtime)
@@ -185,10 +185,6 @@ build/x86/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
 
-build/x86/core/%.o: core/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
-
 build/x86/evmone_host/%.o: evmone_host/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_X86) $(CXXFLAGS_X86) -c $< -o $@
@@ -221,10 +217,6 @@ build/zisk/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV64) $(CXXFLAGS_ZISK) -c $< -o $@
 
-build/zisk/core/%.o: core/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_RISCV64) $(CXXFLAGS_ZISK) -c $< -o $@
-
 build/zisk/evmone_host/%.o: evmone_host/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV64) $(CXXFLAGS_ZISK) -c $< -o $@
@@ -252,10 +244,6 @@ $(LIB_SP1): $(OBJECTS_SP1) build/sp1/monad_objs
 	$(AR_RISCV64) rcs $(LIB_SP1) $(OBJECTS_SP1) build/sp1/monad_objs/*.o build/sp1/monad_objs/*.obj
 
 build/sp1/%.o: %.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_RISCV64) $(CXXFLAGS_SP1) -c $< -o $@
-
-build/sp1/core/%.o: core/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX_RISCV64) $(CXXFLAGS_SP1) -c $< -o $@
 
