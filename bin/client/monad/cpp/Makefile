@@ -23,16 +23,16 @@ MONAD_INCLUDES = -I$(MONAD_VM_DIR) -I$(MONAD_DIR) \
 MONAD_ZKVM_INCLUDES = -I$(MONAD_DIR)/category/zkvm/include $(MONAD_INCLUDES)
 
 # Compiler flags
-CXXFLAGS_COMMON = -std=c++23 -O3 -Ithird_party -Ithird_party/evmc/include -Ithird_party/intx/include -Ithird_party/ethash/include -Ithird_party/unordered_dense/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/libff -Ithird_party/silkpre/third_party/secp256k1/include
-CXXFLAGS_X86 = $(MONAD_INCLUDES) $(CXXFLAGS_COMMON) -fPIC -mavx2 -mbmi2
-CXXFLAGS_ZISK = $(MONAD_ZKVM_INCLUDES) $(CXXFLAGS_COMMON) -Ithird_party/gmp/mini-gmp -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DMONAD_ZKVM -DMONAD_ZKVM_ZISK -DGMP_NUMB_BITS=64
-CXXFLAGS_SP1 = $(MONAD_ZKVM_INCLUDES) $(CXXFLAGS_COMMON) -Ithird_party/gmp/mini-gmp -march=rv64im -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DMONAD_ZKVM -DMONAD_ZKVM_SP1 -DSP1_TARGET -DGMP_NUMB_BITS=64
+CXXFLAGS_COMMON = -std=c++23 -O3 -Ithird_party -Ithird_party/evmc/include -Ithird_party/intx/include -Ithird_party/ethash/include -Ithird_party/unordered_dense/include
+CXXFLAGS_X86 = $(MONAD_INCLUDES) $(CXXFLAGS_COMMON) -I$(MONAD_DIR)/third_party/silkpre/lib -fPIC -mavx2 -mbmi2
+CXXFLAGS_ZISK = $(MONAD_ZKVM_INCLUDES) $(CXXFLAGS_COMMON) -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DMONAD_ZKVM -DMONAD_ZKVM_ZISK
+CXXFLAGS_SP1 = $(MONAD_ZKVM_INCLUDES) $(CXXFLAGS_COMMON) -march=rv64im -mabi=lp64 -nostartfiles -nostdlib++ -mcmodel=medany -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -DNDEBUG -DMONAD_ZKVM -DMONAD_ZKVM_SP1 -DSP1_TARGET
 
 # C compiler flags (for .c files)
-CFLAGS_COMMON = -O3 -Ithird_party/ethash/include -Ithird_party/silkpre/lib -Ithird_party/silkpre/third_party/secp256k1/include
+CFLAGS_COMMON = -O3 -Ithird_party/ethash/include
 CFLAGS_X86 = $(CFLAGS_COMMON) -fPIC
-CFLAGS_ZISK = $(CFLAGS_COMMON) -Ithird_party/gmp/mini-gmp -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -ffunction-sections -fdata-sections -DUSE_NUM_NONE -DUSE_FIELD_INV_BUILTIN -DUSE_SCALAR_INV_BUILTIN -DUSE_FIELD_5X52 -DUSE_SCALAR_4X64 -DHAVE___INT128 -DECMULT_WINDOW_SIZE=15 -DECMULT_GEN_PREC_BITS=4 -DUSE_ENDOMORPHISM -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -DGMP_NUMB_BITS=64
-CFLAGS_SP1 = $(CFLAGS_COMMON) -Ithird_party/gmp/mini-gmp -march=rv64im -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -fno-exceptions -ffunction-sections -fdata-sections -DNDEBUG -DSP1_TARGET -DUSE_NUM_NONE -DUSE_FIELD_INV_BUILTIN -DUSE_SCALAR_INV_BUILTIN -DUSE_FIELD_5X52 -DUSE_SCALAR_4X64 -DHAVE___INT128 -DECMULT_WINDOW_SIZE=15 -DECMULT_GEN_PREC_BITS=4 -DUSE_ENDOMORPHISM -DENABLE_MODULE_ECDH -DENABLE_MODULE_RECOVERY -DGMP_NUMB_BITS=64
+CFLAGS_ZISK = $(CFLAGS_COMMON) -march=rv64ima -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -ffunction-sections -fdata-sections -DNDEBUG
+CFLAGS_SP1 = $(CFLAGS_COMMON) -march=rv64im -mabi=lp64 -nostartfiles -nostdlib -mcmodel=medany -ffunction-sections -fdata-sections -DNDEBUG -DSP1_TARGET
 
 # ============================================================================
 # Source file lists
@@ -64,23 +64,6 @@ ETHASH_C_SOURCES = third_party/ethash/lib/keccak/keccak.c third_party/ethash/lib
 ETHASH_RISCV_CPP_SOURCES = third_party/ethash/lib/ethash/ethash.cpp
 ETHASH_RISCV_C_SOURCES = third_party/ethash/lib/keccak/keccak.c third_party/ethash/lib/ethash/primes.c
 
-# Silkpre library sources
-SILKPRE_CPP_SOURCES = third_party/silkpre/lib/silkpre/precompile.cpp third_party/silkpre/lib/silkpre/secp256k1n.cpp
-SILKPRE_C_SOURCES = third_party/silkpre/lib/silkpre/blake2b.c third_party/silkpre/lib/silkpre/ecdsa.c third_party/silkpre/lib/silkpre/rmd160.c third_party/silkpre/lib/silkpre/sha256.c
-
-# Libff library sources (for BN254/alt_bn128 operations)
-LIBFF_CPP_SOURCES = third_party/silkpre/third_party/libff/libff/algebra/curves/alt_bn128/alt_bn128_init.cpp \
-                    third_party/silkpre/third_party/libff/libff/algebra/curves/alt_bn128/alt_bn128_g1.cpp \
-                    third_party/silkpre/third_party/libff/libff/algebra/curves/alt_bn128/alt_bn128_g2.cpp \
-                    third_party/silkpre/third_party/libff/libff/algebra/curves/alt_bn128/alt_bn128_pairing.cpp \
-                    third_party/silkpre/third_party/libff/libff/algebra/curves/alt_bn128/alt_bn128_pp.cpp
-
-# Secp256k1 library source (unity build)
-SECP256K1_C_SOURCES = third_party/silkpre/third_party/secp256k1/src/secp256k1.c
-
-# Mini-GMP library source (for RISC-V bare-metal)
-MINI_GMP_C_SOURCES = third_party/gmp/mini-gmp/mini-gmp.c
-GMP_COMPAT_C_SOURCES = gmp_mini_compat.c
 
 # ============================================================================
 # Object file lists
@@ -97,36 +80,14 @@ OBJECTS_X86 = $(patsubst %.cpp,build/x86/%.o,$(SOURCES_PROJECT)) \
 # RISC-V (ZisK) objects — project-specific only; monad comes from cmake
 ETHASH_OBJECTS_ZISK = $(patsubst third_party/ethash/lib/%.cpp,build/zisk/ethash_%.o,$(ETHASH_RISCV_CPP_SOURCES)) \
                       $(patsubst third_party/ethash/lib/%.c,build/zisk/ethash_%.o,$(ETHASH_RISCV_C_SOURCES))
-SILKPRE_OBJECTS_ZISK = $(patsubst third_party/silkpre/lib/%.cpp,build/zisk/silkpre_%.o,$(SILKPRE_CPP_SOURCES)) \
-                        $(patsubst third_party/silkpre/lib/%.c,build/zisk/silkpre_%.o,$(SILKPRE_C_SOURCES))
-LIBFF_OBJECTS_ZISK = $(patsubst third_party/silkpre/third_party/libff/libff/%.cpp,build/zisk/libff_%.o,$(LIBFF_CPP_SOURCES))
-SECP256K1_OBJECTS_ZISK = $(patsubst third_party/silkpre/third_party/secp256k1/src/%.c,build/zisk/secp256k1_%.o,$(SECP256K1_C_SOURCES))
-MINI_GMP_OBJECTS_ZISK = $(patsubst third_party/gmp/mini-gmp/%.c,build/zisk/mini_gmp_%.o,$(MINI_GMP_C_SOURCES))
-GMP_COMPAT_OBJECTS_ZISK = $(patsubst %.c,build/zisk/%.o,$(GMP_COMPAT_C_SOURCES))
 OBJECTS_ZISK = $(patsubst %.cpp,build/zisk/%.o,$(SOURCES_ZISK)) \
-                $(ETHASH_OBJECTS_ZISK) \
-                $(SILKPRE_OBJECTS_ZISK) \
-                $(LIBFF_OBJECTS_ZISK) \
-                $(SECP256K1_OBJECTS_ZISK) \
-                $(MINI_GMP_OBJECTS_ZISK) \
-                $(GMP_COMPAT_OBJECTS_ZISK)
+                $(ETHASH_OBJECTS_ZISK)
 
 # RISC-V (SP1) objects
 ETHASH_OBJECTS_SP1 = $(patsubst third_party/ethash/lib/%.cpp,build/sp1/ethash_%.o,$(ETHASH_RISCV_CPP_SOURCES)) \
                      $(patsubst third_party/ethash/lib/%.c,build/sp1/ethash_%.o,$(ETHASH_RISCV_C_SOURCES))
-SILKPRE_OBJECTS_SP1 = $(patsubst third_party/silkpre/lib/%.cpp,build/sp1/silkpre_%.o,$(SILKPRE_CPP_SOURCES)) \
-                      $(patsubst third_party/silkpre/lib/%.c,build/sp1/silkpre_%.o,$(SILKPRE_C_SOURCES))
-LIBFF_OBJECTS_SP1 = $(patsubst third_party/silkpre/third_party/libff/libff/%.cpp,build/sp1/libff_%.o,$(LIBFF_CPP_SOURCES))
-SECP256K1_OBJECTS_SP1 = $(patsubst third_party/silkpre/third_party/secp256k1/src/%.c,build/sp1/secp256k1_%.o,$(SECP256K1_C_SOURCES))
-MINI_GMP_OBJECTS_SP1 = $(patsubst third_party/gmp/mini-gmp/%.c,build/sp1/mini_gmp_%.o,$(MINI_GMP_C_SOURCES))
-GMP_COMPAT_OBJECTS_SP1 = $(patsubst %.c,build/sp1/%.o,$(GMP_COMPAT_C_SOURCES))
 OBJECTS_SP1 = $(patsubst %.cpp,build/sp1/%.o,$(SOURCES_SP1)) \
-              $(ETHASH_OBJECTS_SP1) \
-              $(SILKPRE_OBJECTS_SP1) \
-              $(LIBFF_OBJECTS_SP1) \
-              $(SECP256K1_OBJECTS_SP1) \
-              $(MINI_GMP_OBJECTS_SP1) \
-              $(GMP_COMPAT_OBJECTS_SP1)
+              $(ETHASH_OBJECTS_SP1)
 
 # Library outputs
 LIB_X86 = build/x86/libmonad_wrapper.a
@@ -280,30 +241,6 @@ build/zisk/ethash_%.o: third_party/ethash/lib/%.c
 	@mkdir -p $(dir $@)
 	$(CC_RISCV64) $(CFLAGS_ZISK) -c $< -o $@
 
-build/zisk/silkpre_%.o: third_party/silkpre/lib/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_RISCV64) $(CXXFLAGS_ZISK) -c $< -o $@
-
-build/zisk/silkpre_%.o: third_party/silkpre/lib/%.c
-	@mkdir -p $(dir $@)
-	$(CC_RISCV64) $(CFLAGS_ZISK) -c $< -o $@
-
-build/zisk/libff_%.o: third_party/silkpre/third_party/libff/libff/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_RISCV64) $(CXXFLAGS_ZISK) -DNO_PROCPS=1 -DCURVE_BN128 -DBN_SUPPORT_SNARK=1 -c $< -o $@
-
-build/zisk/secp256k1_%.o: third_party/silkpre/third_party/secp256k1/src/%.c
-	@mkdir -p $(dir $@)
-	$(CC_RISCV64) $(CFLAGS_ZISK) -DECMULT_GEN_PREC_BITS=4 -DECMULT_WINDOW_SIZE=15 -c $< -o $@
-
-build/zisk/mini_gmp_%.o: third_party/gmp/mini-gmp/%.c
-	@mkdir -p $(dir $@)
-	$(CC_RISCV64) $(CFLAGS_ZISK) -c $< -o $@
-
-build/zisk/gmp_mini_compat.o: gmp_mini_compat.c
-	@mkdir -p $(dir $@)
-	$(CC_RISCV64) $(CFLAGS_ZISK) -c $< -o $@
-
 # ============================================================================
 # SP1 RISC-V target (monad interpreter built via cmake)
 # ============================================================================
@@ -335,30 +272,6 @@ build/sp1/ethash_%.o: third_party/ethash/lib/%.cpp
 	$(CXX_RISCV64) $(CXXFLAGS_SP1) -c $< -o $@
 
 build/sp1/ethash_%.o: third_party/ethash/lib/%.c
-	@mkdir -p $(dir $@)
-	$(CC_RISCV64) $(CFLAGS_SP1) -c $< -o $@
-
-build/sp1/silkpre_%.o: third_party/silkpre/lib/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_RISCV64) $(CXXFLAGS_SP1) -c $< -o $@
-
-build/sp1/silkpre_%.o: third_party/silkpre/lib/%.c
-	@mkdir -p $(dir $@)
-	$(CC_RISCV64) $(CFLAGS_SP1) -c $< -o $@
-
-build/sp1/libff_%.o: third_party/silkpre/third_party/libff/libff/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX_RISCV64) $(CXXFLAGS_SP1) -DNO_PROCPS=1 -DCURVE_BN128 -DBN_SUPPORT_SNARK=1 -c $< -o $@
-
-build/sp1/secp256k1_%.o: third_party/silkpre/third_party/secp256k1/src/%.c
-	@mkdir -p $(dir $@)
-	$(CC_RISCV64) $(CFLAGS_SP1) -DECMULT_GEN_PREC_BITS=4 -DECMULT_WINDOW_SIZE=15 -c $< -o $@
-
-build/sp1/mini_gmp_%.o: third_party/gmp/mini-gmp/%.c
-	@mkdir -p $(dir $@)
-	$(CC_RISCV64) $(CFLAGS_SP1) -c $< -o $@
-
-build/sp1/gmp_mini_compat.o: gmp_mini_compat.c
 	@mkdir -p $(dir $@)
 	$(CC_RISCV64) $(CFLAGS_SP1) -c $< -o $@
 

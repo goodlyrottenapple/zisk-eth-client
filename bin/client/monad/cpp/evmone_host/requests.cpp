@@ -3,10 +3,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "requests.hpp"
+
+#ifdef MONAD_ZKVM
+#include <category/zkvm/zkvm_accelerators.h>
+#else
 #include <silkpre/sha256.h>
+#endif
 
 namespace evmone::state
 {
+
+static void sha256(uint8_t* output, const uint8_t* input, size_t len)
+{
+#ifdef MONAD_ZKVM
+    zkvm_sha256(input, len, reinterpret_cast<zkvm_sha256_hash*>(output));
+#else
+    silkpre_sha256(output, input, len, true);
+#endif
+}
+
 hash256 calculate_requests_hash(std::span<const Requests> block_requests_list)
 {
     bytes requests_hash_list;
@@ -18,14 +33,14 @@ hash256 calculate_requests_hash(std::span<const Requests> block_requests_list)
             continue;  // Skip empty requests.
 
         hash256 requests_hash;
-        silkpre_sha256(reinterpret_cast<uint8_t*>(requests_hash.bytes),
-            reinterpret_cast<const uint8_t*>(requests.raw_data.data()), requests.raw_data.size(), true);
+        sha256(reinterpret_cast<uint8_t*>(requests_hash.bytes),
+            reinterpret_cast<const uint8_t*>(requests.raw_data.data()), requests.raw_data.size());
         requests_hash_list += requests_hash;
     }
 
     hash256 block_requests_hash;
-    silkpre_sha256(reinterpret_cast<uint8_t*>(block_requests_hash.bytes),
-        reinterpret_cast<const uint8_t*>(requests_hash_list.data()), requests_hash_list.size(), true);
+    sha256(reinterpret_cast<uint8_t*>(block_requests_hash.bytes),
+        reinterpret_cast<const uint8_t*>(requests_hash_list.data()), requests_hash_list.size());
     return block_requests_hash;
 }
 
