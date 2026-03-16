@@ -10,9 +10,6 @@
 [submodule "bin/client/monad/cpp/third_party/ethash"]
 	path = bin/client/monad/cpp/third_party/ethash
 	url = https://github.com/chfast/ethash.git
-[submodule "bin/client/monad/cpp/third_party/blst"]
-	path = bin/client/monad/cpp/third_party/blst
-	url = https://github.com/supranational/blst.git
 [submodule "bin/client/monad/cpp/third_party/monad"]
 	path = bin/client/monad/cpp/third_party/monad
 	url = git@github.com:category-labs/monad.git
