@@ -2,11 +2,12 @@
 CXX_X86 = g++-15
 CC_X86 = gcc-15
 
-# RISC-V toolchain (nix-built GCC 15 cross-compiler with minimal newlib)
+# RISC-V toolchain: CC_RISCV64, CXX_RISCV64, AR_RISCV64 can be passed from
+# build.rs (sourced from .cargo/config.toml). Falls back to nix-built GCC 15.
 RISCV_TOOLCHAIN_DIR ?= $(shell nix-build $(MONAD_DIR)/riscv64-none-elf.nix --no-out-link)
-CXX_RISCV64 = $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-g++
-CC_RISCV64 = $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-gcc
-AR_RISCV64 = $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-ar
+CXX_RISCV64 ?= $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-g++
+CC_RISCV64 ?= $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-gcc
+AR_RISCV64 ?= $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-ar
 
 # Monad submodule paths
 MONAD_DIR = third_party/monad
