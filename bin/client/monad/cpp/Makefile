@@ -4,10 +4,10 @@ CC_X86 = gcc-15
 
 # RISC-V toolchain: CC_RISCV64, CXX_RISCV64, AR_RISCV64 can be passed from
 # build.rs (sourced from .cargo/config.toml). Falls back to nix-built GCC 15.
-RISCV_TOOLCHAIN_DIR ?= $(shell nix-build $(MONAD_DIR)/riscv64-none-elf.nix --no-out-link)
-CXX_RISCV64 ?= $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-g++
-CC_RISCV64 ?= $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-gcc
-AR_RISCV64 ?= $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-none-elf-ar
+RISCV_TOOLCHAIN_DIR ?= $(shell nix-build $(MONAD_DIR)/riscv64-unknown-elf.nix --no-out-link)
+CXX_RISCV64 ?= $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-unknown-elf-g++
+CC_RISCV64 ?= $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-unknown-elf-gcc
+AR_RISCV64 ?= $(RISCV_TOOLCHAIN_DIR)/bin/riscv64-unknown-elf-ar
 
 # Monad submodule paths
 MONAD_DIR = third_party/monad
@@ -272,9 +272,9 @@ CONVERTER_BIN = build/x86/ethtest_converter
 
 converter: apply-patches $(CONVERTER_BIN)
 
-$(CONVERTER_BIN): build/x86/converter/converter_main.o $(OBJECTS_X86)
+$(CONVERTER_BIN): build/x86/converter/converter_main.o $(OBJECTS_X86) build/x86/monad_objs build/x86/precompile_deps_objs
 	@mkdir -p build/x86
-	$(CXX_X86) -o $@ $^ -lstdc++ -lgmp -lgmpxx
+	$(CXX_X86) -o $@ build/x86/converter/converter_main.o $(OBJECTS_X86) build/x86/monad_objs/*.o build/x86/precompile_deps_objs/*.o -lstdc++ -lgmp -lgmpxx -lcrypto++
 
 build/x86/converter/converter_main.o: converter/converter_main.cpp
 	@mkdir -p $(dir $@)

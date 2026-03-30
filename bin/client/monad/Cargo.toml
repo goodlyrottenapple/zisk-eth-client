@@ -13,7 +13,7 @@ codegen-units = 1
 panic = "abort"
 
 [dependencies]
-ziskos = { git = "https://github.com/0xPolygonHermez/zisk.git", tag = "v0.15.0" }
+ziskos = { git = "https://github.com/0xPolygonHermez/zisk.git", tag = "v0.16.0" }
 # Local development
 # ziskos = { path = "../../../../../zisk/ziskos/entrypoint" }
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
@@ -31,17 +31,6 @@ kzg-rs = { git = "https://github.com/succinctlabs/kzg-rs.git" }
 [build-dependencies]
 cc = "1.0"
 
-[patch.crates-io]
-tiny-keccak = { git = "https://github.com/0xPolygonHermez/zisk-patch-tiny-keccak.git", tag = "patch-2.0.2-zisk-0.15.0" }
-sha2 = { git = "https://github.com/0xPolygonHermez/zisk-patch-hashes.git", tag = "patch-sha2-0.10.9-zisk-0.15.0" }
-k256 = { git = "https://github.com/0xPolygonHermez/zisk-patch-elliptic-curves.git", tag = "patch-k256-0.13.4-zisk-0.15.0" }
-substrate-bn = { git = "https://github.com/0xPolygonHermez/zisk-patch-bn.git", tag = "patch-0.6.0-zisk-0.15.0" }
-aurora-engine-modexp = { git = "https://github.com/0xPolygonHermez/zisk-patch-modexp.git", tag = "patch-1.2.0-zisk-0.15.0" }
-blst = { git = "https://github.com/0xPolygonHermez/zisk-patch-blst.git", tag = "patch-0.3.15-zisk-0.15.0" }
-sp1_bls12_381 = { git = "https://github.com/0xPolygonHermez/zisk-patch-bls12-381.git", tag = "patch-0.8.0-zisk-0.15.0" }
-
-[patch."https://github.com/succinctlabs/kzg-rs"]
-kzg-rs = { git = "https://github.com/0xPolygonHermez/zisk-patch-kzg.git", tag = "patch-0.2.7-zisk-0.15.0" }
 
 # Note: The Monad interpreter is GPL-licensed
 # Users must comply with GPL v3 requirements when using this client

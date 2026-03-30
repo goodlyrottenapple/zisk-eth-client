@@ -5,6 +5,7 @@
 #include "statetest.hpp"
 #include "utils.hpp"
 #include "blockchaintest.hpp"
+#include <iostream>
 
 namespace evmone::test
 {
@@ -171,7 +172,16 @@ BlockchainTest load_blockchain_test_case(const std::string& name, const json::js
 static void from_json(const json::json& j, std::vector<BlockchainTest>& o)
 {
     for (const auto& elem_it : j.items())
-        o.emplace_back(load_blockchain_test_case(elem_it.key(), elem_it.value()));
+    {
+        try
+        {
+            o.emplace_back(load_blockchain_test_case(elem_it.key(), elem_it.value()));
+        }
+        catch (const std::invalid_argument& e)
+        {
+            std::cerr << "Skipping " << elem_it.key() << ": " << e.what() << "\n";
+        }
+    }
 }
 
 std::vector<BlockchainTest> load_blockchain_tests(std::istream& input)

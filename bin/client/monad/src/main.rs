@@ -5,13 +5,11 @@ mod ffi;
 
 mod zkvm_accelerators;
 
-use ziskos::set_output;
-
 /// Read input: on x86 from CLI arg (`-i <file>`), on RISC-V from ziskos memory-mapped input.
 fn read_input() -> Vec<u8> {
     #[cfg(all(target_os = "zkvm", target_vendor = "zisk"))]
     {
-        ziskos::read_input_slice().to_vec()
+        ziskos::io::read_input_slice().to_vec()
     }
 
     #[cfg(not(all(target_os = "zkvm", target_vendor = "zisk")))]
@@ -24,10 +22,13 @@ fn read_input() -> Vec<u8> {
                 std::process::exit(1);
             }
         };
-        std::fs::read(&path).unwrap_or_else(|e| {
+        let bytes = std::fs::read(&path).unwrap_or_else(|e| {
             eprintln!("Error reading {}: {}", path, e);
             std::process::exit(1);
-        })
+        });
+        // Skip the 8-byte length prefix added for the ZisK emulator
+        // (ziskos::io::read_input_slice strips it automatically on zkvm)
+        bytes.get(8..).unwrap_or(&[]).to_vec()
     }
 }
 
@@ -48,9 +49,9 @@ fn main() {
 
     if passed {
         println!("✓ Test passed");
-        set_output(0, 1);
+        ziskos::io::write(&[1u8]);
     } else {
         println!("✗ Test failed");
-        set_output(0, 0);
+        ziskos::io::write(&[0u8]);
     }
 }

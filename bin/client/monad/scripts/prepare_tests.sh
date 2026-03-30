@@ -66,10 +66,16 @@ convert_test() {
     mkdir -p "$(dirname "$bin_file")"
 
     # Converter exits non-zero if no tests match the revision filter
-    if "$CONVERTER" "$json_file" "$bin_file" --rev Cancun >/dev/null 2>&1; then
+    local output
+    output=$("$CONVERTER" "$json_file" "$bin_file" --rev Cancun 2>&1)
+    local exit_code=$?
+    if [ $exit_code -eq 0 ]; then
         if [ -f "$bin_file" ] && [ -s "$bin_file" ]; then
             return 0
         fi
+    elif [ $exit_code -ge 128 ]; then
+        echo "CRASH (exit $exit_code): $json_file" >&2
+        echo "$output" >&2
     fi
     rm -f "$bin_file"
     return 1

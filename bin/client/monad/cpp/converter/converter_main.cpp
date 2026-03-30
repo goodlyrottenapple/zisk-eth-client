@@ -4,6 +4,7 @@
 #include "binary_format.hpp"
 #include "../evmone_test/blockchaintest.hpp"
 #include "../evmone_test/utils.hpp"
+#include <cstring>
 #include <fstream>
 #include <iostream>
 
@@ -59,7 +60,18 @@ int main(int argc, char* argv[])
 
     // Serialize to binary
     auto binary = binary_format::serialize_blockchain_tests(tests);
-    std::cout << "Binary size: " << binary.size() << " bytes\n";
+
+    // ZisK v0.16+ input format: 8-byte LE length prefix, then data padded to 8-byte alignment.
+    // The emulator maps the file at INPUT_ADDR+8; ziskos reads the first 8 bytes as the data length.
+    uint64_t data_len = static_cast<uint64_t>(binary.size());
+    while (binary.size() % 8 != 0)
+        binary.push_back(0);
+
+    std::vector<uint8_t> with_header(8 + binary.size());
+    std::memcpy(with_header.data(), &data_len, 8);
+    std::memcpy(with_header.data() + 8, binary.data(), binary.size());
+
+    std::cout << "Binary size: " << with_header.size() << " bytes (data=" << data_len << ")\n";
 
     // Write output
     std::ofstream output_file(output_path, std::ios::binary);
@@ -68,7 +80,7 @@ int main(int argc, char* argv[])
         std::cerr << "Error: cannot create " << output_path << "\n";
         return 1;
     }
-    output_file.write(reinterpret_cast<const char*>(binary.data()), binary.size());
+    output_file.write(reinterpret_cast<const char*>(with_header.data()), with_header.size());
 
     std::cout << "Wrote " << tests.size() << " test(s) to " << output_path << "\n";
     return 0;
