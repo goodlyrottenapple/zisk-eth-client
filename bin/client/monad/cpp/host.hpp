@@ -46,8 +46,8 @@ namespace monad::vm
         /// no stack objects with uninvoked destructor.
         [[noreturn]] void stack_unwind() const noexcept
         {
-            MONAD_VM_ASSERT(active_exception_);
-            MONAD_VM_ASSERT(runtime_context_)
+            MONAD_ASSERT(active_exception_);
+            MONAD_ASSERT(runtime_context_)
             runtime_context_->stack_unwind();
         }
 
@@ -55,7 +55,8 @@ namespace monad::vm
         [[gnu::always_inline]]
         void rethrow_on_active_exception()
         {
-            if (MONAD_VM_UNLIKELY(active_exception_)) {
+            if (MONAD_UNLIKELY(active_exception_))
+            {
                 auto e = active_exception_;
                 active_exception_ = std::exception_ptr{};
                 std::rethrow_exception(std::move(e));
