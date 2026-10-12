@@ -9,6 +9,8 @@ mod ethrex;
 mod reth;
 #[cfg(feature = "ziskethone")]
 mod ziskethone;
+#[cfg(feature = "monad")]
+mod monad;
 
 pub use input::Client;
 
@@ -51,6 +53,8 @@ pub fn create_client(client: Client) -> Box<dyn InputGenClient> {
         Client::Ethrex => Box::new(input::EthrexClient),
         #[cfg(feature = "ziskethone")]
         Client::ZiskEthOne => Box::new(input::ZiskEthOneClient),
+        #[cfg(feature = "monad")]
+        Client::Monad => Box::new(input::MonadClient),
     }
 }
 

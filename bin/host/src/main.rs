@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 use std::{fs::File, io::Write};
 use tracing::info;
-use zisk_sdk::VerboseMode;
+use zisk_sdk::{GuestProgram, VerboseMode};
 
 use host::benchmark::BenchmarkRunner;
 #[cfg(feature = "ziskethone")]
@@ -38,6 +38,7 @@ async fn main() -> Result<()> {
             hints_out,
             client,
             chain,
+            elf: elf_path,
             include,
             exclude,
         } => {
@@ -45,17 +46,25 @@ async fn main() -> Result<()> {
             info!(" Chain: {:?}", chain);
 
             // To add a client, see docs/adding-a-client.md.
-            let elf = match client {
-                Client::Reth => ELF_RETH,
-                Client::Ethrex => ELF_ETHREX,
+            let elf = match (elf_path, client) {
+                (Some(path), _) => load_elf(path)?,
+                (None, Client::Reth) => ELF_RETH,
+                (None, Client::Ethrex) => ELF_ETHREX,
                 #[cfg(feature = "ziskethone")]
-                Client::ZiskEthOne => match chain {
+                (None, Client::ZiskEthOne) => match chain {
                     Chain::Mainnet => ELF_ZISKETHONE,
                     Chain::Sepolia => ELF_ZISKETHONE_SEPOLIA,
                 },
+                #[cfg(feature = "monad")]
+                (None, Client::Monad) => {
+                    anyhow::bail!("the monad client has no embedded guest ELF; pass --elf <PATH>")
+                }
             };
 
             info!(" ELF Name: {}", elf.name());
+            if let Some(path) = elf_path {
+                info!(" ELF Path: {}", path.display());
+            }
             if let Some(input_folder) = input_folder {
                 info!(" Input Folder: {}", input_folder.display());
             }
@@ -100,6 +109,14 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+/// Load a guest ELF from disk. The path is canonicalized so the SDK sees an
+/// absolute `file://` URI regardless of the working directory.
+fn load_elf(path: &std::path::Path) -> Result<GuestProgram> {
+    let path = std::fs::canonicalize(path)
+        .map_err(|e| anyhow::anyhow!("failed to resolve guest ELF path {}: {e}", path.display()))?;
+    GuestProgram::from_uri(&format!("file://{}", path.display()))
+}
+
 fn init_tracing(verbose: u8) {
     let mode = match verbose {
         0 => VerboseMode::Info,
@@ -134,11 +151,15 @@ fn write_metadata(cli: &Cli) -> Result<()> {
             hints_out,
             client,
             chain,
+            elf,
             include,
             exclude,
         } => {
             writeln!(file, "Client: {:?}", client)?;
             writeln!(file, "Chain: {:?}", chain)?;
+            if let Some(elf) = elf {
+                writeln!(file, "ELF: {}", elf.display())?;
+            }
             if let Some(input_folder) = input_folder {
                 writeln!(file, "Input Folder: {}", input_folder.display())?;
             }

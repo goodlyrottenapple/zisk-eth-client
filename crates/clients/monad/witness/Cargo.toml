@@ -1,0 +1,20 @@
+[package]
+name = "monad-witness"
+description = "reth debug_executionWitness -> Monad zkVM witness (offset-trie envelope)"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "monad-witness"
+path = "src/main.rs"
+
+[dependencies]
+alloy-consensus.workspace = true
+alloy-primitives.workspace = true
+alloy-rlp.workspace = true
+alloy-rpc-types-debug.workspace = true
+alloy-trie.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true

@@ -32,6 +32,7 @@ input-core = { path = "crates/common/input-core" }
 input-ethrex = { path = "crates/clients/ethrex/input" }
 input-reth = { path = "crates/clients/reth/input" }
 input-ziskethone = { path = "crates/clients/ziskethone/input" }
+input-monad = { path = "crates/clients/monad/input" }
 rust-input-gen = { path = "third_party/ziskethone/rust-input-gen" }
 
 # zisk-sdk = { git = "https://github.com/0xPolygonHermez/zisk.git", branch = "pre-develop-1.4.0-alpha" }
@@ -52,6 +53,7 @@ revm = { version = "38.0.0", default-features = false }
 
 # types (for reth)
 alloy-rlp = "0.3"
+alloy-trie = "0.9"
 alloy-primitives = "1.5.6"
 alloy = "2.0.0"
 alloy-consensus = { version = "2.0.0", default-features = false }

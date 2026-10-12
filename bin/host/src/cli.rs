@@ -91,6 +91,11 @@ pub enum GuestProgramCommand {
         #[arg(long, value_enum, default_value = "mainnet")]
         chain: Chain,
 
+        /// Guest ELF to run instead of the embedded one. Required for
+        /// `monad`, which ships no embedded guest.
+        #[arg(long, value_name = "PATH")]
+        elf: Option<PathBuf>,
+
         /// Include only files containing the provided strings.
         #[arg(long)]
         include: Option<Vec<String>>,
