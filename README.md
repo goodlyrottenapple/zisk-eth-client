@@ -4,6 +4,10 @@ An experimental Ethereum execution client built for the [ZisK zkVM](https://gith
 
 This project enables **stateless block validation** to run, verifying Ethereum blocks without maintaining full blockchain state by using execution witnesses. The validation runs inside the ZisK zkVM, allowing blocks to be proven in real-time.
 
+Monad input support is opt-in with `--features monad`. It requires a node
+serving the Monad witness format. The host does not embed a Monad guest: build
+the ELF in the Monad repo and pass it with `--elf`. See the [Monad adapter guide](crates/clients/monad/input/README.md).
+
 ## Project Structure
 
 ```
@@ -126,7 +130,8 @@ host [EXECUTION_OPTIONS] stateless-validator -i <INPUT_FOLDER> [OPTIONS]
 | Option | Description | Default |
 |---|---|---|
 | `-i, --input-folder <PATH>` | Folder containing `.bin` inputs (required unless `--hints` is given) | — |
-| `-c, --client <CLIENT>` | Execution client: `reth`, `ethrex` | `reth` |
+| `-c, --client <CLIENT>` | Execution client: `reth`, `ethrex`; `monad`/`ziskethone` with their Cargo features | `reth` |
+| `--elf <PATH>` | Guest ELF to run instead of the embedded one (required for `monad`) | — |
 | `--include <PATTERN>` | Only process inputs whose name contains the pattern (repeatable) | — |
 | `--exclude <PATTERN>` | Skip inputs whose name contains the pattern (repeatable) | — |
 | `--hints <PATH>` | Run against a pre-generated `.hints` file/folder (mutually exclusive with `--input-folder`) | — |

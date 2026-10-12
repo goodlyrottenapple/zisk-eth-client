@@ -32,3 +32,4 @@ walkdir.workspace = true
 # ziskethone client for input generation (no C++). input-gen never calls the
 # native `run()`, so there's no `ziskethone-native-ffi` here.
 ziskethone = ["input/ziskethone"]
+monad = ["input/monad"]

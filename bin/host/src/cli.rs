@@ -85,6 +85,11 @@ pub enum GuestProgramCommand {
         #[arg(short, long, default_value = "reth")]
         client: input::Client,
 
+        /// Guest ELF to run instead of the embedded one. Required for
+        /// `monad`, which ships no embedded guest.
+        #[arg(long, value_name = "PATH")]
+        elf: Option<PathBuf>,
+
         /// Include only files containing the provided strings.
         #[arg(long)]
         include: Option<Vec<String>>,

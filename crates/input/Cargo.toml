@@ -10,6 +10,7 @@ input-reth = { workspace = true, optional = true }
 input-ethrex = { workspace = true, optional = true }
 # No C++ by default; the native FFI is opt-in via `ziskethone-native-ffi`.
 input-ziskethone = { workspace = true, optional = true }
+input-monad = { workspace = true, optional = true }
 
 clap = { workspace = true, optional = true }
 
@@ -22,6 +23,7 @@ cli = ["dep:clap"]
 reth = ["dep:input-reth"]
 ethrex = ["dep:input-ethrex"]
 ziskethone = ["dep:input-ziskethone"]
+monad = ["dep:input-monad"]
 # Native C++ `run()` FFI (clang >= 15 / g++ >= 12 + submodule). Implies
 # `ziskethone` so the client is actually selectable, not just built.
 ziskethone-native-ffi = ["ziskethone", "input-ziskethone/native-ffi"]

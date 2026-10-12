@@ -5,6 +5,9 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
+# monad client. Ships no embedded guest: build the ELF in the Monad repo and
+# pass it with `--elf` (see crates/clients/monad/input/README.md).
+monad = ["input/monad"]
 # ziskethone client. Off by default. Mirrors `input`'s own split: selecting the
 # client needs no C++ — only the native `run()` FFI does, and that is reached
 # solely via `--gen-hints` (execute/verify-constraints never call it, and

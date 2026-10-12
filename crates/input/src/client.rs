@@ -13,6 +13,8 @@ pub enum Client {
     #[cfg(feature = "ziskethone")]
     #[cfg_attr(feature = "cli", value(name = "ziskethone"))]
     ZiskEthOne,
+    #[cfg(feature = "monad")]
+    Monad,
 }
 
 pub fn create_client(client: Client) -> Box<dyn ExecutionClient> {
@@ -23,5 +25,7 @@ pub fn create_client(client: Client) -> Box<dyn ExecutionClient> {
         Client::Ethrex => Box::new(input_ethrex::EthrexClient),
         #[cfg(feature = "ziskethone")]
         Client::ZiskEthOne => Box::new(input_ziskethone::ZiskEthOneClient),
+        #[cfg(feature = "monad")]
+        Client::Monad => Box::new(input_monad::MonadClient),
     }
 }

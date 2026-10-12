@@ -12,3 +12,5 @@ pub use input_ethrex::EthrexClient;
 pub use input_reth::RethClient;
 #[cfg(feature = "ziskethone")]
 pub use input_ziskethone::ZiskEthOneClient;
+#[cfg(feature = "monad")]
+pub use input_monad::MonadClient;

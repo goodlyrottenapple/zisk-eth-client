@@ -15,3 +15,4 @@ tracing-subscriber.workspace = true
 [features]
 # ziskethone client for input generation (no C++ toolchain).
 ziskethone = ["input-gen-lib/ziskethone"]
+monad = ["input-gen-lib/monad"]
