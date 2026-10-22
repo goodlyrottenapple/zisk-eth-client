@@ -8,14 +8,15 @@ for build prerequisites and instructions.
 
 ## RPC contract
 
-The adapter talks to an unmodified reth node (an archive node, or one whose witness
+The adapter talks to an unmodified reth node (2.7 or newer: the witness call
+selects the `canonical` mode) (an archive node, or one whose witness
 window still holds the block's parent state). Each fetch makes three calls, with the
 configured RPC headers applied to all of them:
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}
 {"jsonrpc":"2.0","id":2,"method":"debug_getRawBlock","params":["0x189e85b"]}
-{"jsonrpc":"2.0","id":3,"method":"debug_executionWitness","params":["0x189e85b"]}
+{"jsonrpc":"2.0","id":3,"method":"debug_executionWitness","params":["0x189e85b","canonical"]}
 ```
 
 The chain id must be `0x1`. `debug_getRawBlock` supplies the block's exact RLP bytes,
@@ -31,7 +32,8 @@ Monad RLP witness envelope, before ZisK framing:
 6. Grandparent sender/authority list (empty for Ethereum).
 
 RPC errors (including an unavailable/pruned witness) are returned to the caller
-without retries. Requests time out after 60 seconds; witnesses are limited to 64 MiB.
+without retries. Requests time out after 330 seconds (reth's own read-transaction
+limit is 300 s); witnesses are limited to 64 MiB.
 
 The adapter validates the envelope boundaries, decodes the block, and checks
 its number against the request. Guest execution performs state/consensus

@@ -70,7 +70,9 @@ impl ExecutionClient for MonadClient {
         }
         let client = HttpClientBuilder::default()
             .set_headers(headers)
-            .request_timeout(Duration::from_secs(60))
+            // reth answers a canonical witness near the tip in well under a second,
+            // but its own read-transaction limit is 300 s; give it that and a margin.
+            .request_timeout(Duration::from_secs(330))
             // A hex-encoded witness takes twice as many bytes, plus the JSON envelope.
             .max_response_size((2 * MAX_WITNESS_BYTES + 1024) as u32)
             .build(&config.url)
@@ -98,8 +100,10 @@ impl ExecutionClient for MonadClient {
             got == block_number,
             "debug_getRawBlock returned block {got}, requested {block_number}"
         );
+        // reth >= 2.7 takes a witness mode as the second parameter; the default
+        // `legacy` mode does not complete on mainnet blocks, `canonical` does.
         let reth_witness: ExecutionWitness = client
-            .request("debug_executionWitness", rpc_params![hex])
+            .request("debug_executionWitness", rpc_params![hex, "canonical"])
             .await
             .with_context(|| {
                 format!("debug_executionWitness({block_number}): the node must be a reth archive node, or hold the parent state")
